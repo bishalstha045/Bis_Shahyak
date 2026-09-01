@@ -1,0 +1,5 @@
+STRICT GROUNDING DIRECTIVE:
+1. Every standard cited must have a corresponding IS number present in the provided context documents.
+2. If the standard is not explicitly present in the context, do NOT assume or extrapolate an IS number.
+3. Do not invent dates, fee schedules, or laboratory names unless documented in context.
+4. When uncertain, explicitly state the boundary of available information.

@@ -1,0 +1,1138 @@
+[
+  {
+    "id": "IS 17803:2022",
+    "title": "Stainless Steel Vacuum Flasks / Insulated Water Bottles - Specification",
+    "sector": "Consumer Goods & Utensils",
+    "year": "2022",
+    "status": "Current / Mandatory under QCO 2023",
+    "effective_date": "2023-06-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 1",
+        "date": "2023-09",
+        "summary": "Updated permissible food-grade stainless steel austenitic grades (SS 304 / SS 316) and laser marking guidelines."
+      }
+    ],
+    "applicable_products": [
+      "stainless steel water bottle",
+      "stainless steel flask",
+      "vacuum insulated water bottle",
+      "insulated metal flask",
+      "double walled steel bottle",
+      "thermo steel bottle"
+    ],
+    "characteristics": [
+      "Food contact austenitic stainless steel material (Grade SS 304 / SS 316 / IS 6911)",
+      "Double-walled vacuum thermal insulation",
+      "Nominal liquid holding capacity from 250 ml to 2000 ml",
+      "Leak-proof cap with food-grade silicone gasket"
+    ],
+    "intended_use": [
+      "Safe storage and thermal temperature retention of drinking water and potable beverages",
+      "Domestic and outdoor hydration"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS17803",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1",
+        "title": "Material of Construction & Food Grade Steel",
+        "page": "3",
+        "category": "Material specification",
+        "requirement_text": "Inner body and outer casing in contact with beverage shall be manufactured from austenitic stainless steel Grade X04Cr19Ni9 (SS 304) or X02Cr17Ni12Mo2 (SS 316) conforming to IS 6911. Heavy metal extraction test (Lead < 0.01 mg/kg, Cadmium < 0.005 mg/kg) must comply with IS 9845.",
+        "test_method": "Spectrometric chemical analysis conforming to IS 228 and Overall Migration Test under IS 9845",
+        "required_evidence": "Raw material Mill Test Certificate (MTC) + NABL Spectrometry Chemical Composition Report",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "5.2",
+        "section": "Clause 5.2",
+        "title": "Thermal Insulation Retention Test",
+        "page": "5",
+        "category": "Safety & Performance test",
+        "requirement_text": "The vacuum flask filled with boiling water (min 95°C) and sealed at ambient temperature (27±2°C) shall retain minimum temperature of 60°C after 6 hours for small flasks (<500ml) and minimum 65°C after 6 hours for flasks >750ml.",
+        "test_method": "Calibrated thermal sensor immersion test in controlled climatic chamber over 6-hour interval",
+        "required_evidence": "In-house / NABL Calibrated Thermal Insulation Retention Test Report",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "6.1",
+        "section": "Clause 6.1",
+        "title": "Leakage & Inversion Pressure Resistance",
+        "page": "7",
+        "category": "Safety & Performance test",
+        "requirement_text": "Flask filled to rated capacity with liquid, capped tightly, and inverted for 30 minutes at room temperature and subjected to 20 kPa internal pressure must show zero liquid seepage or gasket deformation.",
+        "test_method": "Inversion leak test bench with hydrostatic air pressure gauge",
+        "required_evidence": "Leakage and pressure tightness test log sheet",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "7.3",
+        "section": "Clause 7.3",
+        "title": "Drop Impact and Handle Dynamic Strength",
+        "page": "8",
+        "category": "Safety & Performance test",
+        "requirement_text": "Filled bottle dropped from a height of 1.0 meter onto hardwood floor in 3 orientations (base, cap, side) shall show no rupture, vacuum loss, or leakage.",
+        "test_method": "Standard drop tester apparatus (1.0m height)",
+        "required_evidence": "Drop test observation report and vacuum post-drop verification",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "8.1",
+        "section": "Clause 8.1",
+        "title": "Marking, Capacity Stamping & ISI License Layout",
+        "page": "10",
+        "category": "Product marking",
+        "requirement_text": "Every bottle must be permanently laser-etched on base with: 1. Manufacturer Name / Trademark, 2. Nominal Capacity in ml, 3. Steel Grade (e.g., SUS 304), 4. Standard Mark (ISI Logo) with CM/L License Number.",
+        "test_method": "Visual and abrasion resistance inspection of laser etching",
+        "required_evidence": "Artwork approval sheet & sample laser etching photo with CM/L number",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 17526:2021",
+    "title": "Domestic Stainless Steel Single-Walled Water Bottles - Specification",
+    "sector": "Consumer Goods & Utensils",
+    "year": "2021",
+    "status": "Current",
+    "effective_date": "2021-11-15",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "single walled steel bottle",
+      "stainless steel water bottle",
+      "non-insulated metal bottle",
+      "fridge steel bottle",
+      "gym steel bottle"
+    ],
+    "characteristics": [
+      "Single-walled non-insulated stainless steel construction",
+      "Direct liquid contact SS 304 / SS 201 food-grade sheet",
+      "Thickness not less than 0.5 mm"
+    ],
+    "intended_use": [
+      "Domestic water storage, refrigerator bottle, and general ambient liquid holding"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS17526",
+    "key_clauses": [
+      {
+        "clause_id": "4.2",
+        "section": "Clause 4.2",
+        "title": "Sheet Thickness and Stainless Steel Grade",
+        "page": "2",
+        "category": "Material specification",
+        "requirement_text": "Minimum wall thickness shall be 0.50 mm throughout body. Material must be food contact compliant austenitic steel with Nickel > 8.0% and Chromium > 18.0%.",
+        "test_method": "Ultrasonic / digital micrometric thickness gauge and XRF spectrometry",
+        "required_evidence": "Raw material chemical & dimensional inspection report",
+        "mandatory_qco": false
+      },
+      {
+        "clause_id": "5.1",
+        "section": "Clause 5.1",
+        "title": "Corrosion Resistance Salt Spray Test",
+        "page": "4",
+        "category": "Safety & Performance test",
+        "requirement_text": "Bottle interior exposed to 5% neutral sodium chloride salt spray test for 24 hours shall show no signs of pitting, discoloration, or rust formation.",
+        "test_method": "Salt spray chamber conforming to IS 9000 (Part 11)",
+        "required_evidence": "24-hour Salt Spray Corrosion Resistance Test Certificate",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 302-2-15:2009",
+    "title": "Safety of Household and Similar Electrical Appliances - Particular Requirements for Appliances for Heating Liquids (Electric Kettles)",
+    "sector": "Electrical & Consumer Electronics",
+    "year": "2009",
+    "status": "Current / Mandatory under QCO",
+    "effective_date": "2010-04-01",
+    "superseded_status": "Active (Read in conjunction with IS 302-1:2008)",
+    "amendments": [
+      {
+        "number": "Amendment No. 2",
+        "date": "2020-03",
+        "summary": "Mandated cordless kettle connector endurance testing (10,000 cycles) and bimetal thermal protector fail-safe response."
+      }
+    ],
+    "applicable_products": [
+      "electric kettle",
+      "cordless electric kettle",
+      "electric tea maker",
+      "immersion water heater",
+      "liquid heating appliance"
+    ],
+    "characteristics": [
+      "Rated voltage up to 250V AC single phase",
+      "Rated wattage 500W to 2200W",
+      "Heating element with concealed or immersion base",
+      "Automatic shut-off and boil-dry safety switch"
+    ],
+    "intended_use": [
+      "Boiling water and heating potable liquids for household preparation"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS302_2_15",
+    "key_clauses": [
+      {
+        "clause_id": "7.1",
+        "section": "Clause 7.1",
+        "title": "Marking, Rating Label & ISI License Stamping",
+        "page": "4",
+        "category": "Product marking",
+        "requirement_text": "Kettles shall be permanently marked with rated voltage (230V AC), rated power (W), model identifier, water level MAX indicator, and ISI mark with CML license number.",
+        "test_method": "Rubbing test with water and petroleum spirit for 15 seconds",
+        "required_evidence": "Approved rating plate artwork with CM/L number",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "13.2",
+        "section": "Clause 13.2",
+        "title": "Leakage Current & Dielectric Strength at Operating Temperature",
+        "page": "7",
+        "category": "Safety & Performance test",
+        "requirement_text": "Leakage current under operating temperature shall not exceed 0.75 mA for Class I portable appliances. High voltage insulation must withstand 1000V AC for 1 minute without breakdown.",
+        "test_method": "Calibrated leakage current meter and High Voltage Dielectric breakdown tester",
+        "required_evidence": "NABL Electrical Type Test Report covering Clause 13 & 16",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "19.101",
+        "section": "Clause 19.101",
+        "title": "Abnormal Operation and Boil-Dry Protection",
+        "page": "9",
+        "category": "Safety & Performance test",
+        "requirement_text": "Kettles energized without water at 1.15 times rated power input must trigger automatic thermal cut-out before vessel temperature exceeds 200°C, with zero flame or molten material risk.",
+        "test_method": "Dry boil abnormal operation test chamber with thermocouple logging",
+        "required_evidence": "Thermal cut-out response log & boil-dry safety test certificate",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "22.103",
+        "section": "Clause 22.103",
+        "title": "Cordless Kettle Base Interlock and Pin Endurance",
+        "page": "12",
+        "category": "Safety & Performance test",
+        "requirement_text": "Base contacts must endure 10,000 insertion and withdrawal cycles under electrical load without excessive contact resistance or pin deformation.",
+        "test_method": "Automated mechanical endurance cycling machine at 10 cycles/min",
+        "required_evidence": "10,000-cycle connector endurance test report",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 302 (Part 1):2008",
+    "title": "Safety of Household and Similar Electrical Appliances - General Requirements",
+    "sector": "Electrical & Consumer Electronics",
+    "year": "2008",
+    "status": "Current / Core Base Standard",
+    "effective_date": "2009-01-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 3",
+        "date": "2021-08",
+        "summary": "Harmonized earth continuity testing and glow-wire flammability test for polymer enclosures."
+      }
+    ],
+    "applicable_products": [
+      "all household electrical appliances",
+      "general electrical goods",
+      "home appliances"
+    ],
+    "characteristics": [
+      "Single phase AC up to 250V, three phase up to 415V",
+      "Class I (Earthed) and Class II (Double Insulated) electrical architecture"
+    ],
+    "intended_use": [
+      "Base electrical safety framework for all domestic and commercial appliances"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS302_1",
+    "key_clauses": [
+      {
+        "clause_id": "8.1",
+        "section": "Clause 8.1",
+        "title": "Protection Against Access to Live Parts",
+        "page": "11",
+        "category": "Safety & Performance test",
+        "requirement_text": "Live parts shall not be accessible to standard jointed test finger probe (Test Probe B of IS 1401) in all operating positions.",
+        "test_method": "Standard articulated test probe inspection with 20N force",
+        "required_evidence": "IP2X access verification test sheet",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "25.1",
+        "section": "Clause 25.1",
+        "title": "Supply Connection and Flexible Power Cord",
+        "page": "28",
+        "category": "Material specification",
+        "requirement_text": "Supply power cord must comply with IS 694 with green/yellow earth core. Cord anchorage must withstand 25 pulls of 60N with zero longitudinal displacement exceeding 2mm.",
+        "test_method": "Cord pull and torque testing machine",
+        "required_evidence": "IS 694 cable conformity certificate + cord anchorage test report",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 3196 (Part 1):2013",
+    "title": "Welded Low Carbon Steel Cylinders Exceeding 5 Litre Water Capacity for Low Pressure Liquefiable Gases (LPG Cylinders)",
+    "sector": "Pressure Vessels & Gas",
+    "year": "2013",
+    "status": "Current / Mandatory under Gas Cylinder Rules & QCO",
+    "effective_date": "2014-01-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 1",
+        "date": "2019-11",
+        "summary": "Mandated automated ultrasonic longitudinal weld inspection and standardized tare weight tolerance (+/- 100g)."
+      }
+    ],
+    "applicable_products": [
+      "LPG cylinder",
+      "domestic gas cylinder 14.2 kg",
+      "commercial gas cylinder 19 kg",
+      "liquefied petroleum gas bottle",
+      "welded steel gas container"
+    ],
+    "characteristics": [
+      "Welded low carbon steel sheet conforming to IS 6240",
+      "Water capacity from 5 Litres to 130 Litres",
+      "Designed for propane, butane, and LPG mixtures"
+    ],
+    "intended_use": [
+      "Storage, transportation, and domestic/commercial distribution of LPG"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS3196_1",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1",
+        "title": "Steel Chemistry & Mechanical Properties",
+        "page": "3",
+        "category": "Material specification",
+        "requirement_text": "Steel sheets must comply with IS 6240 Grade 1. Carbon max 0.16%, Manganese 0.30-0.80%, Sulphur & Phosphorus max 0.035% each. Tensile strength min 350-450 MPa with min 25% elongation.",
+        "test_method": "Chemical spectrometry and tensile testing machine under IS 1608",
+        "required_evidence": "IS 6240 Steel Raw Material Test Certificate + Spectrometer Log",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "8.2",
+        "section": "Clause 8.2",
+        "title": "Hydrostatic Proof Pressure & Volumetric Expansion Test",
+        "page": "8",
+        "category": "Safety & Performance test",
+        "requirement_text": "Every cylinder manufactured shall undergo 100% hydrostatic proof pressure testing at 2.45 MPa (25 kgf/cm2) with zero leakage. Permanent volumetric expansion must not exceed 10% of total expansion.",
+        "test_method": "Water jacket hydrostatic test installation with digital manometer",
+        "required_evidence": "Batch Hydrostatic Test Record Log signed by Quality Inspector",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "9.1",
+        "section": "Clause 9.1",
+        "title": "Bursting Pressure Test (Destructive Batch Sampling)",
+        "page": "10",
+        "category": "Safety & Performance test",
+        "requirement_text": "Sample cylinder selected from each heat lot of 200 units must burst at pressure not less than 4.90 MPa without steel fragmentation.",
+        "test_method": "High-pressure hydraulic burst chamber",
+        "required_evidence": "Destructive Burst Pressure Test Report with pressure curve graph",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "12.1",
+        "section": "Clause 12.1",
+        "title": "Collar Stamping, Tare Weight & Permanent ISI Mark",
+        "page": "13",
+        "category": "Product marking",
+        "requirement_text": "Collar shroud must be stamped with test pressure (2.45 MPa), water capacity (L), tare weight (kg), manufacturer mark, PESO approval number, and ISI mark with CML number.",
+        "test_method": "Visual inspection and die-stamping verification",
+        "required_evidence": "Approved collar stamping layout and tare scale calibration report",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 3196 (Part 2):2013",
+    "title": "Welded Low Carbon Steel Cylinders for Low Pressure Liquefiable Gases - Cylinders for Liquefiable Gases Other than LPG",
+    "sector": "Pressure Vessels & Gas",
+    "year": "2013",
+    "status": "Current",
+    "effective_date": "2014-01-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "refrigerant gas cylinder",
+      "ammonia welded cylinder",
+      "industrial liquefied gas cylinder"
+    ],
+    "characteristics": [
+      "Welded low carbon steel for non-LPG low pressure gases (fluorocarbons, sulfur dioxide, methyl chloride)"
+    ],
+    "intended_use": [
+      "Containment and transport of specialized industrial refrigerant and chemical gases"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS3196_2",
+    "key_clauses": [
+      {
+        "clause_id": "5.1",
+        "section": "Clause 5.1",
+        "title": "Design Wall Thickness and Corrosion Allowance",
+        "page": "4",
+        "category": "Material specification",
+        "requirement_text": "Wall thickness calculated based on maximum developed pressure at 65°C with additional 1.0 mm corrosion allowance for non-toxic industrial refrigerants.",
+        "test_method": "Ultrasonic thickness measurement",
+        "required_evidence": "Design calculation sheet and ultrasonic thickness log",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 14543:2004",
+    "title": "Packaged Drinking Water (Other Than Packaged Natural Mineral Water) - Specification",
+    "sector": "Food Products & Beverages",
+    "year": "2004",
+    "status": "Current / Mandatory under FSSAI & BIS Act",
+    "effective_date": "2005-01-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 8",
+        "date": "2022-04",
+        "summary": "Mandated pesticide residue limits (< 0.0001 mg/L) and radio-nucleotide testing."
+      }
+    ],
+    "applicable_products": [
+      "packaged drinking water",
+      "bottled drinking water",
+      "RO purified packaged water",
+      "20 litre water jar",
+      "packaged water pouch"
+    ],
+    "characteristics": [
+      "Water treated by decantation, filtration, RO, demineralization, ozonation, or UV",
+      "Packaged in hermetically sealed food-grade containers"
+    ],
+    "intended_use": [
+      "Direct human consumption and commercial retail potable hydration"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS14543",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1 & Table 1",
+        "title": "Physical and Chemical Quality Parameters",
+        "page": "3",
+        "category": "Material specification",
+        "requirement_text": "TDS max 500 mg/L, pH 6.5 to 8.5, Turbidity max 2 NTU, Total Hardness max 200 mg/L, Chlorides max 200 mg/L, Heavy metals: Lead max 0.01 mg/L, Arsenic max 0.01 mg/L.",
+        "test_method": "AAS/ICP-MS spectrometry and standard chemical titration under IS 3025",
+        "required_evidence": "Complete Chemical Analysis Report from NABL / BIS In-house Laboratory",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "5.1",
+        "section": "Clause 5.1 & Table 2",
+        "title": "Microbiological Sterility Parameters",
+        "page": "6",
+        "category": "Safety & Performance test",
+        "requirement_text": "Escherichia coli, Total Coliforms, Faecal Streptococci, and Pseudomonas aeruginosa must be absent in 250 ml sample. Yeast and mould count must be zero.",
+        "test_method": "Membrane filtration method under IS 15185 / IS 5403",
+        "required_evidence": "Daily Microbiological In-house Laboratory Culture Incubation Log",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "7.1",
+        "section": "Clause 7.1",
+        "title": "Food Grade Packaging in IS 15410 PET Containers",
+        "page": "8",
+        "category": "Product marking",
+        "requirement_text": "Bottles must conform to IS 15410. Labels must declare: 1. Brand Name, 2. Net Volume, 3. Batch No, 4. Date of Packing, 5. 'CRUSH THE BOTTLE AFTER USE', 6. ISI Standard Mark with CML number and FSSAI License Number.",
+        "test_method": "Migration testing under IS 9845 and artwork verification",
+        "required_evidence": "Bottle packaging certificate under IS 15410 + Approved Label Artwork",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 13428:2005",
+    "title": "Packaged Natural Mineral Water - Specification",
+    "sector": "Food Products & Beverages",
+    "year": "2005",
+    "status": "Current / Mandatory Certification",
+    "effective_date": "2006-03-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "natural mineral water",
+      "spring mineral water",
+      "mountain spring packaged water"
+    ],
+    "characteristics": [
+      "Obtained directly from natural or drilled underground springs with natural mineral content, packaged at source"
+    ],
+    "intended_use": [
+      "Natural mineral drinking water consumption without chemical remineralization"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS13428",
+    "key_clauses": [
+      {
+        "clause_id": "3.1",
+        "section": "Clause 3.1",
+        "title": "Origin and Protection of Underground Water Source",
+        "page": "2",
+        "category": "Material specification",
+        "requirement_text": "Source must be an underground water-bearing strata accessed through a natural spring or borehole protected against surface contamination. Total Dissolved Solids naturally present between 150 mg/L and 700 mg/L.",
+        "test_method": "Hydrogeological source inspection report and full spectrum mineral assay",
+        "required_evidence": "Geological Survey & Source Hydro-Chemical Purity Certificate",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 15410:2003",
+    "title": "Containers for Packaging of Natural Mineral Water and Packaged Drinking Water - Specification",
+    "sector": "Plastics & Packaging",
+    "year": "2003",
+    "status": "Current / Mandatory for Bottling Plants",
+    "effective_date": "2004-03-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "plastic water bottle",
+      "PET bottle for water",
+      "polycarbonate water jar",
+      "20L water dispenser bottle",
+      "mineral water plastic container"
+    ],
+    "characteristics": [
+      "Rigid/semi-rigid virgin plastic container (PET, Polycarbonate, Polypropylene)",
+      "Food contact certified under IS 10146"
+    ],
+    "intended_use": [
+      "Direct packaging and preservation of bottled drinking water"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS15410",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1",
+        "title": "Raw Material Grade & Overall Migration Limit",
+        "page": "2",
+        "category": "Material specification",
+        "requirement_text": "Must use 100% virgin food grade polymer. Overall migration limit shall not exceed 60 mg/kg or 10 mg/dm2 when tested in distilled water and 3% acetic acid simulant.",
+        "test_method": "Overall migration extraction testing under IS 9845",
+        "required_evidence": "Virgin Polymer Certificate + Migration Test Certificate",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "6.2",
+        "section": "Clause 6.2",
+        "title": "Drop Impact and Top Load Axial Resistance",
+        "page": "5",
+        "category": "Safety & Performance test",
+        "requirement_text": "Filled containers dropped from 1.2m onto smooth concrete must not rupture or leak. Top load vertical compression strength must withstand min 150 N.",
+        "test_method": "Top load compression tester and drop test jig",
+        "required_evidence": "Top load & drop impact testing verification report",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 9873 (Part 1):2019",
+    "title": "Safety of Toys - Part 1: Mechanical and Physical Properties",
+    "sector": "Toys & Children Goods",
+    "year": "2019",
+    "status": "Current / Mandatory under Toys Quality Control Order",
+    "effective_date": "2021-01-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 1",
+        "date": "2022-01",
+        "summary": "Updated expanding materials requirements and projectile toy kinetic energy limits (< 0.08 J)."
+      }
+    ],
+    "applicable_products": [
+      "children toys",
+      "plastic toys",
+      "wooden toys",
+      "mechanical toys",
+      "board games",
+      "soft toys",
+      "toy export products"
+    ],
+    "characteristics": [
+      "Intended for play by children under 14 years of age",
+      "Plastic, metal, textile, or composite construction"
+    ],
+    "intended_use": [
+      "Recreation, learning, and play for infants and children"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS9873_1",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1",
+        "title": "Small Parts Choking Hazard for Under 36 Months",
+        "page": "7",
+        "category": "Safety & Performance test",
+        "requirement_text": "Toys for children under 3 years must not detach or contain components fitting entirely inside the small parts cylinder (31.7 mm diameter x 57.1 mm depth).",
+        "test_method": "Small parts test fixture gauge under 4.45N force",
+        "required_evidence": "NABL Small Parts Choking Hazard Test Report",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "4.7",
+        "section": "Clause 4.7",
+        "title": "Accessible Sharp Edges and Sharp Points",
+        "page": "12",
+        "category": "Safety & Performance test",
+        "requirement_text": "Accessible edges and points must be hemmed or covered. Must not cut PTFE tape on sharp edge tester or actuate sharp point indicator probe.",
+        "test_method": "Sharp edge tester (UL 1439) and sharp point tester",
+        "required_evidence": "Sharp edges and points inspection log",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "7.1",
+        "section": "Clause 7.1",
+        "title": "Mandatory Age Grading Warnings & ISI Marking",
+        "page": "18",
+        "category": "Product marking",
+        "requirement_text": "Packaging must bear: 1. Minimum age icon (e.g. 0-3 circle slash), 2. Specific hazard statement, 3. Manufacturer address, 4. ISI Standard Mark with CML license.",
+        "test_method": "Label inspection and legibility assessment",
+        "required_evidence": "Approved packaging artwork and Scheme-I License certificate",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 9873 (Part 2):2017",
+    "title": "Safety of Toys - Part 2: Flammability Requirements",
+    "sector": "Toys & Children Goods",
+    "year": "2017",
+    "status": "Current / Mandatory under Toys QCO",
+    "effective_date": "2021-01-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "stuffed toys",
+      "costumes",
+      "play tents",
+      "soft fabric toys",
+      "wigs and beards"
+    ],
+    "characteristics": [
+      "Flammability rate of textile, pile fabric, or hair material in toys"
+    ],
+    "intended_use": [
+      "Fire safety and prevention of rapid flame spread in children play costumes and stuffed toys"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS9873_2",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1",
+        "title": "Maximum Rate of Flame Spread for Pile Fabrics",
+        "page": "4",
+        "category": "Safety & Performance test",
+        "requirement_text": "Flammability rate of soft stuffed toys and fabric costumes shall not exceed 30 mm/s when subjected to standard micro-burner ignition flame for 3 seconds.",
+        "test_method": "Flammability test cabinet with timed optical sensors",
+        "required_evidence": "NABL Toy Flammability Flame Spread Report",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 9873 (Part 3):2020",
+    "title": "Safety of Toys - Part 3: Migration of Certain Heavy Elements",
+    "sector": "Toys & Children Goods",
+    "year": "2020",
+    "status": "Current / Mandatory under Toys QCO",
+    "effective_date": "2021-01-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "painted toys",
+      "plastic toys",
+      "modelling clay",
+      "finger paints",
+      "crayons"
+    ],
+    "characteristics": [
+      "Surface coatings, polymers, and pliable materials accessible to mouthing"
+    ],
+    "intended_use": [
+      "Prevention of heavy metal toxicity and ingestion in children"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS9873_3",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1 & Table 1",
+        "title": "Element Migration Limits for Heavy Metals",
+        "page": "4",
+        "category": "Material specification",
+        "requirement_text": "Maximum elemental migration limits (mg/kg): Lead 90 (23 for modelling clay), Cadmium 75, Arsenic 25, Antimony 60, Barium 1000, Chromium 60, Mercury 60, Selenium 500.",
+        "test_method": "Hydrochloric acid (0.07 M) extraction and ICP-OES / AAS analysis",
+        "required_evidence": "NABL Heavy Elements Migration Test Certificate",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 1417:2016",
+    "title": "Gold and Gold Alloys, Platings - Purity and Hallmarking - Specification",
+    "sector": "Precious Metals & Jewellery",
+    "year": "2016",
+    "status": "Current / Mandatory Hallmarking in 343+ Districts",
+    "effective_date": "2017-01-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 2",
+        "date": "2021-07",
+        "summary": "Mandated 6-digit alphanumeric Hallmarking Unique Identification (HUID) laser marking."
+      }
+    ],
+    "applicable_products": [
+      "gold jewellery",
+      "gold coin",
+      "gold bullion",
+      "gold artefacts"
+    ],
+    "characteristics": [
+      "Gold content declared in Karats (24K, 22K, 18K, 14K) and parts per thousand fineness (999, 916, 750, 585)"
+    ],
+    "intended_use": [
+      "Consumer gold retail sale and financial jewellery transactions"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS1417",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1 & Table 1",
+        "title": "Recognized Fineness Grades and Zero Negative Tolerance",
+        "page": "2",
+        "category": "Material specification",
+        "requirement_text": "Standard grades: 24K (999/995), 22K (916), 20K (833), 18K (750), 14K (585), 9K (375). Zero negative tolerance permitted against declared fineness grade.",
+        "test_method": "Fire Assay method conforming to IS 1418 and XRF preliminary screening",
+        "required_evidence": "Assaying & Hallmarking Centre (AHC) Fire Assay Test Report",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "6.1",
+        "section": "Clause 6.1",
+        "title": "Tripartite Hallmark Laser Etching & 6-Digit HUID",
+        "page": "5",
+        "category": "Product marking",
+        "requirement_text": "Mandatory three marks: 1. BIS Triangular Logo, 2. Purity in Karat and Fineness (e.g. 22K916), 3. 6-digit alphanumeric Hallmarking Unique Identification (HUID).",
+        "test_method": "Microscopic visual inspection and BIS e-Manak HUID database verification",
+        "required_evidence": "BIS Recognized AHC Hallmarking Certificate with HUID Number",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 2112:2014",
+    "title": "Silver and Silver Alloys, Platings - Purity and Hallmarking - Specification",
+    "sector": "Precious Metals & Jewellery",
+    "year": "2014",
+    "status": "Current",
+    "effective_date": "2015-02-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "silver jewellery",
+      "silver utensils",
+      "silver coins",
+      "silver articles"
+    ],
+    "characteristics": [
+      "Silver purity fineness declared in parts per thousand (999, 925 Sterling Silver, 900, 800)"
+    ],
+    "intended_use": [
+      "Retail silver jewellery, utensils, and bullion sale"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS2112",
+    "key_clauses": [
+      {
+        "clause_id": "4.1",
+        "section": "Clause 4.1",
+        "title": "Silver Fineness Grades & Assay Determination",
+        "page": "2",
+        "category": "Material specification",
+        "requirement_text": "Fineness grades: 999 (fine silver), 970, 925 (sterling), 900, 835, 800. Purity determined via potentiometric titration conforming to IS 2113.",
+        "test_method": "Potentiometric titration and gravimetric silver analysis",
+        "required_evidence": "AHC Silver Purity Assay Certificate",
+        "mandatory_qco": false
+      }
+    ]
+  },
+  {
+    "id": "IS 16046 (Part 2):2018",
+    "title": "Secondary Cells and Batteries Containing Alkaline or Other Non-Acid Electrolytes (Lithium Systems)",
+    "sector": "Electronics, Energy & EV",
+    "year": "2018",
+    "status": "Current / Mandatory under Compulsory Registration Scheme (CRS)",
+    "effective_date": "2019-03-14",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "lithium-ion battery",
+      "smartphone battery",
+      "power bank",
+      "laptop lithium battery",
+      "portable energy storage"
+    ],
+    "characteristics": [
+      "Rechargeable lithium and lithium-ion secondary cells and battery packs"
+    ],
+    "intended_use": [
+      "Portable electronic appliances, computers, and consumer devices"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS16046_2",
+    "key_clauses": [
+      {
+        "clause_id": "8.2",
+        "section": "Clause 8.2",
+        "title": "Continuous Charging and External Short Circuit Test",
+        "page": "11",
+        "category": "Safety & Performance test",
+        "requirement_text": "Fully charged cells charged at specified current for 28 days must exhibit no fire, explosion, or leakage. External short circuit test at 55°C must not result in flame.",
+        "test_method": "28-day continuous charging rack and 55°C short circuit chamber (<80 mOhm)",
+        "required_evidence": "NABL Electrical Battery Safety Test Report under CRS Scheme-II",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "8.4",
+        "section": "Clause 8.4",
+        "title": "Thermal Abuse and Mechanical Shock Resistance",
+        "page": "16",
+        "category": "Safety & Performance test",
+        "requirement_text": "Cells held in gravity convection oven at 130°C for 10 minutes must not explode or ignite. Free fall drop test from 1.0m on concrete must maintain casing integrity.",
+        "test_method": "130°C thermal abuse chamber and drop test apparatus",
+        "required_evidence": "Thermal abuse test log with temperature thermocouple profile",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 1293:2019",
+    "title": "Plugs and Socket-Outlets of Rated Voltage up to 250V and Rated Current up to 16A - Specification",
+    "sector": "Electrical Accessories",
+    "year": "2019",
+    "status": "Current / Mandatory QCO",
+    "effective_date": "2020-12-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "electric plug",
+      "wall socket outlet",
+      "power extension cord",
+      "6A plug",
+      "16A power socket"
+    ],
+    "characteristics": [
+      "2-pin and 3-pin plugs/sockets rated for 6A, 10A, and 16A at 250V AC"
+    ],
+    "intended_use": [
+      "Electrical mains power connection in residential and commercial installations"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS1293",
+    "key_clauses": [
+      {
+        "clause_id": "9.1",
+        "section": "Clause 9.1",
+        "title": "Dimensional Verification & Earth Pin First-Make Last-Break",
+        "page": "6",
+        "category": "Material specification",
+        "requirement_text": "Pin dimensions must conform to standard go/no-go gauges. The earth pin must engage before current-carrying live and neutral pins make contact and break last.",
+        "test_method": "Calibrated precision plug gauge set",
+        "required_evidence": "Dimensional inspection gauge sheet",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "20.1",
+        "section": "Clause 20.1",
+        "title": "Temperature Rise Test Under Rated Current",
+        "page": "14",
+        "category": "Safety & Performance test",
+        "requirement_text": "Terminals carrying 1.1 times rated current (17.6A for 16A rating) shall not exceed temperature rise of 45 K above ambient.",
+        "test_method": "Thermocouple continuous current loading bench for 1 hour",
+        "required_evidence": "NABL Temperature Rise Test Certificate",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 269:2015",
+    "title": "Ordinary Portland Cement (33 Grade, 43 Grade and 53 Grade) - Specification",
+    "sector": "Civil Engineering & Building Materials",
+    "year": "2015",
+    "status": "Current / Mandatory under Cement QCO",
+    "effective_date": "2016-06-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 2",
+        "date": "2021-02",
+        "summary": "Revised chloride content limits (< 0.05%) for pre-stressed concrete applications."
+      }
+    ],
+    "applicable_products": [
+      "ordinary portland cement",
+      "OPC 43 grade",
+      "OPC 53 grade",
+      "OPC 33 grade",
+      "building cement"
+    ],
+    "characteristics": [
+      "Hydraulic binder composed of synthetic calcium silicates"
+    ],
+    "intended_use": [
+      "Reinforced concrete structures, bridges, pavements, and building construction"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS269",
+    "key_clauses": [
+      {
+        "clause_id": "5.1",
+        "section": "Clause 5.1 & Table 1",
+        "title": "Chemical Composition Limits (LSF, Insoluble Residue, Magnesia)",
+        "page": "3",
+        "category": "Material specification",
+        "requirement_text": "Lime Saturation Factor (LSF) 0.66 to 1.02, Insoluble residue max 5.0%, Magnesia max 6.0%, Total Loss on Ignition max 5.0%, Total Sulfur as SO3 max 3.5%.",
+        "test_method": "Chemical wet analysis under IS 4032",
+        "required_evidence": "Daily Chemical Quality Control Log + NABL Cement Test Report",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "6.2",
+        "section": "Clause 6.2 & Table 2",
+        "title": "Compressive Strength & Setting Time",
+        "page": "5",
+        "category": "Safety & Performance test",
+        "requirement_text": "Initial setting time min 30 min, Final setting time max 600 min. 28-Day Compressive Strength: 33 Grade >= 33 MPa, 43 Grade >= 43 MPa, 53 Grade >= 53 MPa.",
+        "test_method": "Vicat apparatus for setting time and hydraulic compression testing under IS 4031",
+        "required_evidence": "28-Day Mortar Cube Compressive Strength Record Sheet",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 1786:2008",
+    "title": "High Strength Deformed Steel Bars and Wires for Concrete Reinforcement - Specification (TMT Steel)",
+    "sector": "Civil Engineering & Building Materials",
+    "year": "2008",
+    "status": "Current / Mandatory under Steel QCO",
+    "effective_date": "2009-02-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 3",
+        "date": "2019-06",
+        "summary": "Introduced Fe 550D, Fe 600, and Fe 650 grades with high elongation ductility."
+      }
+    ],
+    "applicable_products": [
+      "TMT steel bar",
+      "reinforcement steel rebars",
+      "Fe 500D TMT bar",
+      "concrete reinforcement rods"
+    ],
+    "characteristics": [
+      "Thermo-mechanically treated (TMT) deformed carbon steel rebar (Fe 415, Fe 500, Fe 500D, Fe 550D)"
+    ],
+    "intended_use": [
+      "Tensile reinforcement in earthquake-resistant RCC buildings, bridges, and infrastructure"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS1786",
+    "key_clauses": [
+      {
+        "clause_id": "4.2",
+        "section": "Clause 4.2 & Table 1",
+        "title": "Carbon Equivalent & Chemical Composition",
+        "page": "2",
+        "category": "Material specification",
+        "requirement_text": "Carbon Equivalent (CE) max 0.42% for Fe 500D grade. Sulfur & Phosphorus max 0.040% each to ensure superior weldability and ductility.",
+        "test_method": "Emission spectrometry under IS 8811",
+        "required_evidence": "Heat Ladle Chemical Analysis Mill Certificate",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "8.1",
+        "section": "Clause 8.1 & Table 3",
+        "title": "Proof Stress, Tensile Strength and Minimum Elongation",
+        "page": "4",
+        "category": "Safety & Performance test",
+        "requirement_text": "0.2% Proof Stress min 500 MPa. Tensile strength / yield ratio min 1.10. Total elongation at maximum force min 5.0% (min 16% gauge elongation for 500D).",
+        "test_method": "Universal Testing Machine (UTM) tensile pull under IS 1608",
+        "required_evidence": "UTM Tensile Stress-Strain Graph Record",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 4151:2015",
+    "title": "Protective Helmets for Two Wheeler Riders - Specification",
+    "sector": "Automotive Safety & Consumer Goods",
+    "year": "2015",
+    "status": "Current / Mandatory under Motor Vehicles Act & QCO",
+    "effective_date": "2016-03-01",
+    "superseded_status": "Active",
+    "amendments": [
+      {
+        "number": "Amendment No. 1",
+        "date": "2018-09",
+        "summary": "Weight limit capped at 1.2 kg and revised peripheral vision field of view."
+      }
+    ],
+    "applicable_products": [
+      "two wheeler helmet",
+      "motorcycle helmet",
+      "protective rider helmet",
+      "full face helmet",
+      "open face helmet"
+    ],
+    "characteristics": [
+      "Hard protective shell (ABS / Polycarbonate), impact absorbing EPS liner, retention chinstrap, and visor"
+    ],
+    "intended_use": [
+      "Head protection and crash injury prevention for motorized two-wheeler riders"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS4151",
+    "key_clauses": [
+      {
+        "clause_id": "7.1",
+        "section": "Clause 7.1",
+        "title": "Impact Attenuation & Headform Peak Deceleration",
+        "page": "7",
+        "category": "Safety & Performance test",
+        "requirement_text": "Helmet dropped onto flat and hemispherical steel anvils at 7.5 m/s. Peak headform deceleration shall not exceed 300g and duration of 150g must not exceed 5 ms.",
+        "test_method": "Guided free-fall monorail impact rig with tri-axial accelerometer",
+        "required_evidence": "NABL Impact Attenuation Dynamic Sensor Graph Report",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "9.1",
+        "section": "Clause 9.1",
+        "title": "Retention System (Chinstrap) Dynamic Strength",
+        "page": "11",
+        "category": "Safety & Performance test",
+        "requirement_text": "Chinstrap subjected to dynamic drop mass. Dynamic displacement shall not exceed 35 mm and residual elongation shall not exceed 25 mm.",
+        "test_method": "Dynamic retention drop tester with 10 kg drop weight",
+        "required_evidence": "Chinstrap elongation and release buckle test report",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 16289:2014",
+    "title": "Medical Face Masks - Specification",
+    "sector": "Medical Devices & Textiles",
+    "year": "2014",
+    "status": "Current / Mandatory Certification",
+    "effective_date": "2015-01-01",
+    "superseded_status": "Active",
+    "amendments": [],
+    "applicable_products": [
+      "surgical face mask",
+      "3 ply medical mask",
+      "hospital protective mask"
+    ],
+    "characteristics": [
+      "Spunbond-Meltblown-Spunbond (SMS) nonwoven polypropylene with nose clip and ear loops"
+    ],
+    "intended_use": [
+      "Barrier protection against infectious droplets and airborne microbial transmission"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS16289",
+    "key_clauses": [
+      {
+        "clause_id": "5.2",
+        "section": "Clause 5.2",
+        "title": "Bacterial Filtration Efficiency (BFE) >= 98%",
+        "page": "3",
+        "category": "Safety & Performance test",
+        "requirement_text": "BFE tested with aerosolized Staphylococcus aureus shall be minimum 95% for Class 1 and minimum 98% for Class 2 & 3 surgical masks.",
+        "test_method": "Anderson 6-stage biological aerosol sampler under ASTM F2101",
+        "required_evidence": "NABL Bacterial Filtration Biological Laboratory Certificate",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "5.3",
+        "section": "Clause 5.3",
+        "title": "Differential Pressure (Breathability Delta P) and Splash Resistance",
+        "page": "5",
+        "category": "Safety & Performance test",
+        "requirement_text": "Differential pressure must be less than 40 Pa/cm2 for comfortable breathability. Synthetic blood fluid resistance minimum 120 mmHg for surgical protection.",
+        "test_method": "Differential manometer airflow bench and pressurized synthetic blood nozzle",
+        "required_evidence": "Breathability Delta P and Fluid Splash Test Log",
+        "mandatory_qco": true
+      }
+    ]
+  },
+  {
+    "id": "IS 14286:1995",
+    "title": "Crystalline Silicon Terrestrial Photovoltaic (PV) Modules - Design Qualification and Type Approval",
+    "sector": "Solar & Renewable Energy",
+    "year": "1995",
+    "status": "Current / Mandatory under MNRE Quality Control Order",
+    "effective_date": "2018-04-16",
+    "superseded_status": "Active (IEC 61215 harmonized)",
+    "amendments": [
+      {
+        "number": "Amendment No. 2",
+        "date": "2020-09",
+        "summary": "Mandated PID (Potential Induced Degradation) testing and revised bypass diode thermal runaway verification."
+      }
+    ],
+    "applicable_products": [
+      "solar panel",
+      "photovoltaic solar module",
+      "monocrystalline PV module",
+      "polycrystalline solar panel",
+      "rooftop solar panel"
+    ],
+    "characteristics": [
+      "Tempered solar glass, EVA encapsulant, crystalline silicon cells, Tedlar backsheet, anodized aluminum frame"
+    ],
+    "intended_use": [
+      "Direct conversion of solar irradiance into electrical power in terrestrial grid-tied and off-grid installations"
+    ],
+    "source_url": "https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/Indian_standards/isdetails/?std_id=IS14286",
+    "key_clauses": [
+      {
+        "clause_id": "10.1",
+        "section": "Clause 10.1",
+        "title": "Electrical Performance at Standard Test Conditions (STC)",
+        "page": "6",
+        "category": "Safety & Performance test",
+        "requirement_text": "Peak maximum power (Pmax), open circuit voltage (Voc), and short circuit current (Isc) measured under 1000 W/m2 irradiance, AM 1.5 spectrum at 25°C cell temperature.",
+        "test_method": "Class AAA Xenon Flash Sun Simulator conforming to IEC 60904",
+        "required_evidence": "NABL Flash Tester Calibration Curve & Power Output Matrix",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "10.11",
+        "section": "Clause 10.11",
+        "title": "Thermal Cycling (200 Cycles -40°C to +85°C) & Damp Heat (1000 Hours)",
+        "page": "14",
+        "category": "Safety & Performance test",
+        "requirement_text": "Module subjected to 200 thermal cycles between -40°C and +85°C with current injection, followed by 1000 hours at 85°C / 85% RH. Power degradation must not exceed 5%.",
+        "test_method": "Walk-in environmental climatic simulation chamber with continuous IV curve monitoring",
+        "required_evidence": "200-cycle Thermal & Damp Heat Environmental Aging Report",
+        "mandatory_qco": true
+      },
+      {
+        "clause_id": "10.16",
+        "section": "Clause 10.16",
+        "title": "Mechanical Load Test (5400 Pa Wind & Snow Load)",
+        "page": "19",
+        "category": "Safety & Performance test",
+        "requirement_text": "Module mounted on frame subjected to dynamic pneumatic pressure load of 5400 Pa (front face snow load) and 2400 Pa (rear face wind suction) with zero cell micro-cracking.",
+        "test_method": "Automated mechanical load test rig with suction pads",
+        "required_evidence": "5400 Pa Mechanical Load & Post-EL Electroluminescence Image",
+        "mandatory_qco": true
+      }
+    ]
+  }
+]
