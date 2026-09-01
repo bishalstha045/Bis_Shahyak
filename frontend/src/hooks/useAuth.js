@@ -15,16 +15,35 @@ const formatSupabaseUser = (sessionUser) => {
     mobile_number: meta.mobile_number || '',
     enterprise_category: meta.enterprise_category || 'MSME - Small Enterprise',
     sector: meta.sector || 'Consumer Goods & Utensils',
+    avatar_url: meta.avatar_url || meta.picture || '',
     provider: sessionUser.app_metadata?.provider || 'email'
   };
 };
 
 export function useAuth() {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('bis_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('bis_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Purge old mock user from browser storage
+        if (parsed?.id === 'usr-google-demo' || parsed?.email === 'google.user@gmail.com') {
+          localStorage.removeItem('bis_user');
+          localStorage.removeItem('bis_token');
+          return null;
+        }
+        return parsed;
+      }
+    } catch {
+      return null;
+    }
+    return null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem('bis_token') || null);
+
+  const [token, setToken] = useState(() => {
+    const saved = localStorage.getItem('bis_token');
+    return saved === 'google-demo-token' ? null : saved;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -32,9 +51,18 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    async function initSession() {
-      if (!isSupabaseConfigured()) return;
+    // Remove any stale demo session if present
+    const saved = localStorage.getItem('bis_user');
+    if (saved && (saved.includes('usr-google-demo') || saved.includes('google.user@gmail.com'))) {
+      localStorage.removeItem('bis_user');
+      localStorage.removeItem('bis_token');
+      if (mounted) {
+        setUser(null);
+        setToken(null);
+      }
+    }
 
+    async function initSession() {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
@@ -47,13 +75,13 @@ export function useAuth() {
           localStorage.setItem('bis_token', session.access_token);
         }
       } catch (err) {
-        console.warn("Supabase session initialization note:", err.message);
+        console.warn("Supabase session check:", err.message);
       }
     }
 
     initSession();
 
-    // Listen to real-time auth state events (sign in, sign out, token refreshed)
+    // Listen to real-time auth state events (OAuth callback, sign in, sign out)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
@@ -82,39 +110,23 @@ export function useAuth() {
     setError(null);
 
     try {
-      if (isSupabaseConfigured()) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password
-        });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
 
-        if (error) {
-          throw new Error(error.message || "Invalid credentials. Please verify your email and password.");
-        }
-
-        const userObj = formatSupabaseUser(data.user);
-        setUser(userObj);
-        setToken(data.session.access_token);
-        localStorage.setItem('bis_user', JSON.stringify(userObj));
-        localStorage.setItem('bis_token', data.session.access_token);
-        return userObj;
+      if (error) {
+        throw new Error(error.message || "Invalid credentials. Please verify your email and password.");
       }
 
-      // Fallback demo/local authentication when Supabase keys are not yet configured
-      const demoUser = {
-        id: 'usr-demo-01',
-        email: email || 'demo@msme.gov.in',
-        full_name: 'Anil Sharma',
-        company_name: 'Alpha Stainless Works Ltd.',
-        role: 'Manufacturer',
-        enterprise_category: 'MSME - Small Enterprise',
-        sector: 'Consumer Goods & Utensils'
-      };
-      setUser(demoUser);
-      setToken('demo-token-12345');
-      localStorage.setItem('bis_user', JSON.stringify(demoUser));
-      localStorage.setItem('bis_token', 'demo-token-12345');
-      return demoUser;
+      const userObj = formatSupabaseUser(data.user);
+      setUser(userObj);
+      setToken(data.session?.access_token || null);
+      localStorage.setItem('bis_user', JSON.stringify(userObj));
+      if (data.session?.access_token) {
+        localStorage.setItem('bis_token', data.session.access_token);
+      }
+      return userObj;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -128,56 +140,34 @@ export function useAuth() {
     setError(null);
 
     try {
-      if (isSupabaseConfigured()) {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: {
-              full_name: full_name?.trim() || '',
-              company_name: company_name?.trim() || 'Registered Enterprise',
-              role: role || 'Manufacturer',
-              mobile_number: mobile_number?.trim() || '',
-              enterprise_category: enterprise_category || 'MSME - Small Enterprise',
-              sector: sector || 'Consumer Goods & Utensils'
-            }
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: full_name?.trim() || '',
+            company_name: company_name?.trim() || 'Registered Enterprise',
+            role: role || 'Manufacturer',
+            mobile_number: mobile_number?.trim() || '',
+            enterprise_category: enterprise_category || 'MSME - Small Enterprise',
+            sector: sector || 'Consumer Goods & Utensils'
           }
-        });
-
-        if (error) {
-          throw new Error(error.message || "Registration failed. Please check your details.");
         }
+      });
 
-        const userObj = formatSupabaseUser(data.user) || {
-          id: data.user?.id || 'usr-' + Date.now(),
-          email: email.trim(),
-          full_name: full_name?.trim() || 'Authorized Representative',
-          company_name: company_name?.trim() || 'Registered Enterprise',
-          role: role || 'Manufacturer'
-        };
-
-        setUser(userObj);
-        if (data.session) {
-          setToken(data.session.access_token);
-          localStorage.setItem('bis_token', data.session.access_token);
-        }
-        localStorage.setItem('bis_user', JSON.stringify(userObj));
-        return userObj;
+      if (error) {
+        throw new Error(error.message || "Registration failed. Please check your details.");
       }
 
-      // Fallback local registration
-      const userObj = {
-        id: 'usr-new-' + Date.now(),
-        email: email || 'newuser@msme.gov.in',
-        full_name: full_name || 'Authorized Compliance Officer',
-        company_name: company_name || 'Enterprise Works',
-        role: role || 'Manufacturer'
-      };
-
+      const userObj = formatSupabaseUser(data.user);
       setUser(userObj);
-      setToken('demo-token-reg');
-      localStorage.setItem('bis_user', JSON.stringify(userObj));
-      localStorage.setItem('bis_token', 'demo-token-reg');
+      if (data.session) {
+        setToken(data.session.access_token);
+        localStorage.setItem('bis_token', data.session.access_token);
+      }
+      if (userObj) {
+        localStorage.setItem('bis_user', JSON.stringify(userObj));
+      }
       return userObj;
     } catch (err) {
       setError(err.message);
@@ -191,30 +181,23 @@ export function useAuth() {
     setLoading(true);
     setError(null);
     try {
-      if (isSupabaseConfigured()) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin
-          }
-        });
-        if (error) throw error;
-        return data;
+      const redirectUrl = window.location.origin;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || "Failed to initiate Google authentication.");
       }
 
-      // In dev fallback mode if keys aren't provided
-      const googleUser = {
-        id: 'usr-google-demo',
-        email: 'google.user@gmail.com',
-        full_name: 'Google Verified User',
-        company_name: 'Global Exports Ltd.',
-        role: 'Manufacturer'
-      };
-      setUser(googleUser);
-      setToken('google-demo-token');
-      localStorage.setItem('bis_user', JSON.stringify(googleUser));
-      localStorage.setItem('bis_token', 'google-demo-token');
-      return googleUser;
+      // Explicitly redirect the window to Google OAuth consent page
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+      return data;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -227,25 +210,33 @@ export function useAuth() {
     if (!email) {
       throw new Error("Please enter your email address to reset password.");
     }
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin
-      });
-      if (error) throw error;
-      return data;
-    }
-    return { success: true };
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin
+    });
+    if (error) throw error;
+    return data;
   };
 
   const quickDemoLogin = async () => {
-    return await login('demo@msme.gov.in', 'Demo@1234');
+    const demoUser = {
+      id: 'usr-demo-01',
+      email: 'demo@msme.gov.in',
+      full_name: 'Anil Sharma',
+      company_name: 'Alpha Stainless Works Ltd.',
+      role: 'Manufacturer',
+      enterprise_category: 'MSME - Small Enterprise',
+      sector: 'Consumer Goods & Utensils'
+    };
+    setUser(demoUser);
+    setToken('demo-token-12345');
+    localStorage.setItem('bis_user', JSON.stringify(demoUser));
+    localStorage.setItem('bis_token', 'demo-token-12345');
+    return demoUser;
   };
 
   const logout = async () => {
     try {
-      if (isSupabaseConfigured()) {
-        await supabase.auth.signOut();
-      }
+      await supabase.auth.signOut();
     } catch (e) {
       console.warn("Supabase signout note:", e.message);
     } finally {
