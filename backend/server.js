@@ -1,35 +1,41 @@
-/**
- * BIS Sahayak V2 - Backend Server Bridge
- * 
- * This file serves as an optional Node.js runner for the Python FastAPI server.
- * You can also run the server directly using:
- *   uvicorn app.main:app --reload --port 8000
- */
+import app from './src/app.js';
+import { env } from './src/config/env.js';
+import { connectDB } from './src/config/db.js';
+import { ragService } from './src/services/rag.service.js';
 
-const { spawn } = require('child_process');
+async function bootstrap() {
+  console.log('====================================================');
+  console.log('🏛️  BIS Sahayak V2 — Node.js Express Backend Service');
+  console.log('====================================================');
 
-console.log('====================================================');
-console.log('🏛️  Starting BIS Sahayak V2 Backend (FastAPI)...');
-console.log('====================================================');
+  // Connect to Database
+  await connectDB();
 
-const isWindows = process.platform === 'win32';
-const pythonCmd = isWindows ? 'python' : 'python3';
+  // Test RAG Engine Connection
+  const ragStatus = await ragService.checkHealth();
+  console.log(`🧠 RAG Engine Status: ${ragStatus.status === 'healthy' ? 'Connected & Healthy (Port 8000)' : 'Running Standalone Mode'}`);
 
-const server = spawn(pythonCmd, ['-m', 'uvicorn', 'app.main:app', '--reload', '--port', '8000'], {
-  stdio: 'inherit',
-  shell: true,
-  env: { ...process.env }
-});
+  const server = app.listen(env.PORT, () => {
+    console.log(`🚀 Server running on port ${env.PORT}`);
+    console.log(`🔗 API Base: http://localhost:${env.PORT}/api`);
+    console.log(`🩺 Health Check: http://localhost:${env.PORT}/health`);
+    console.log('====================================================\n');
+  });
 
-server.on('error', (err) => {
-  console.error('Failed to start uvicorn process:', err.message);
-  console.log('\nMake sure Python 3 is installed and your virtual environment is active:');
-  console.log('  source venv/bin/activate  (or venv\\Scripts\\activate on Windows)');
-  console.log('  pip install -r requirements.txt\n');
-});
+  // Graceful termination
+  const shutdown = () => {
+    console.log('\nStopping BIS Sahayak backend server...');
+    server.close(() => {
+      console.log('Server gracefully stopped.');
+      process.exit(0);
+    });
+  };
 
-server.on('close', (code) => {
-  if (code !== 0) {
-    console.log(`Server process exited with code ${code}`);
-  }
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+bootstrap().catch(err => {
+  console.error("Failed to start backend server:", err);
+  process.exit(1);
 });

@@ -3,8 +3,11 @@
 .env.local
 .env.*.local
 backend/.env
+frontend/.env
 backend/:memory:.ses
 *.ses
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Python & Virtual Environments
 __pycache__/
