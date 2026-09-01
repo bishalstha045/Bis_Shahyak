@@ -1,0 +1,21 @@
+{
+  "name": "bis-sahayak-backend",
+  "version": "2.0.0",
+  "description": "BIS Sahayak V2 - AI-Powered BIS Compliance Navigator Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "python -m unittest discover tests"
+  },
+  "keywords": [
+    "bis",
+    "compliance",
+    "fastapi",
+    "rag",
+    "ai",
+    "sih2026"
+  ],
+  "author": "bishalstha045",
+  "license": "ISC"
+}
