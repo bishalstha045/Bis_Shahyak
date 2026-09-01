@@ -1,0 +1,15 @@
+{
+  "short_name": "BIS Sahayak",
+  "name": "BIS Sahayak — Indian Standards AI Assistant",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "display": "standalone"
+}
