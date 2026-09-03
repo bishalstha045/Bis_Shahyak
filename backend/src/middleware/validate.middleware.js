@@ -58,15 +58,6 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required.")
 });
 
-export const otpRequestSchema = z.object({
-  phone: z.string().min(10, "Please provide a valid 10-digit mobile number.")
-});
-
-export const otpVerifySchema = z.object({
-  phone: z.string().min(10, "Valid mobile number is required."),
-  code: z.string().length(6, "OTP must be exactly 6 digits.")
-});
-
 export const assessmentSaveSchema = z.object({
   product_name: z.string().min(1, "product_name is required."),
   standard_id: z.string().min(1, "standard_id is required."),

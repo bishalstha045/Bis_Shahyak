@@ -69,20 +69,3 @@ export const getAssessments = async (req, res, next) => {
     return sendError(res, err.message, 500);
   }
 };
-
-export const requestOtp = async (req, res) => {
-  const { phone } = req.body;
-  if (!phone || phone.length < 10) {
-    return sendError(res, "Please provide a valid 10-digit mobile number.", 400);
-  }
-  return sendSuccess(res, { message: `OTP sent successfully to +91 ${phone}`, timer: 30 });
-};
-
-export const verifyOtp = async (req, res) => {
-  const { phone, code } = req.body;
-  if (!code || code.length !== 6) {
-    return sendError(res, "Please enter all 6 digits of the OTP.", 400);
-  }
-  const result = await authService.login({ email: 'demo@msme.gov.in', password: 'Demo@1234' });
-  return res.status(200).json(result);
-};
