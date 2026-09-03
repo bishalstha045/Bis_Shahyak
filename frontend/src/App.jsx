@@ -44,6 +44,13 @@ export default function App() {
     });
   }, []);
 
+  // Automatically reopen AuthModal if pending verification, Google notice, or org onboarding exists
+  useEffect(() => {
+    if (auth?.pendingVerification || auth?.needsOrgOnboarding || auth?.googleNotice) {
+      setAuthModalOpen(true);
+    }
+  }, [auth?.pendingVerification, auth?.needsOrgOnboarding, auth?.googleNotice]);
+
   const handleOpenEvidence = (ev) => {
     setActiveEvidence(ev);
     setEvidenceModalOpen(true);
@@ -74,7 +81,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#f8fafc] text-slate-900 font-sans">
-      
+
       {/* Top Header Across Full Width */}
       <Header
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
@@ -89,7 +96,7 @@ export default function App() {
 
       {/* Main Workspace (Sidebar + Views) */}
       <div className="flex-1 flex overflow-hidden">
-        
+
         {/* Left Sidebar */}
         <Sidebar
           isOpen={sidebarOpen}
@@ -120,6 +127,7 @@ export default function App() {
               onOpenEvidence={handleOpenEvidence}
               onCheckComplianceForStandard={handleCheckComplianceForStandard}
               onAskAIAboutStandard={handleAskAIAboutStandard}
+              onNavigate={setActiveTab}
             />
           )}
 
@@ -180,6 +188,7 @@ export default function App() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         auth={auth}
+        onNavigate={setActiveTab}
       />
 
       <HelpModal

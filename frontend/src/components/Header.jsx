@@ -12,8 +12,13 @@ export default function Header({
   onTabChange
 }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
+
+  // When a user logs in or switches, resolve unread notifications for a clean state
+  useEffect(() => {
+    setUnreadCount(0);
+  }, [auth?.user?.id]);
 
   // Click outside listener for notification dropdown
   useEffect(() => {
@@ -163,9 +168,15 @@ export default function Header({
                 <div className="flex items-center justify-between px-1 pb-2 border-b border-slate-100 font-bold">
                   <div className="flex items-center gap-2 text-slate-900">
                     <span className="text-sm font-bold">Notifications</span>
-                    <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px]">
-                      3 New
-                    </span>
+                    {unreadCount > 0 ? (
+                      <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold">
+                        {unreadCount} New
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-medium">
+                        All Caught Up
+                      </span>
+                    )}
                   </div>
                   <button
                     type="button"
