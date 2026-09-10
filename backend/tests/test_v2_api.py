@@ -27,25 +27,25 @@ async def test_v2_suite():
     print(f"Logged in user: {login_res['user']['full_name']} ({login_res['user']['company_name']})")
     print(">> TEST 1 PASSED!")
 
-    # 2. Test Product -> Standard: Stainless Steel Water Bottles
-    print("\n[TEST 2] Product -> Applicable Standard Mapping:")
-    res_p = match_product_to_standards("I manufacture stainless steel water bottles")
+    # 2. Test Product -> Standard: Domestic Pressure Cooker
+    print("\n[TEST 2] Product -> Applicable Standard Mapping (Pressure Cooker):")
+    res_p = match_product_to_standards("I manufacture domestic pressure cookers")
     print(f"Product Identified: {res_p['product_profile']['product_name']}")
     print(f"Top Standard: {res_p['applicable_standards'][0]['standard_id']} - {res_p['applicable_standards'][0]['title']}")
     assert res_p["has_evidence"] is True
-    assert "17803" in res_p["applicable_standards"][0]["standard_id"] or "17526" in res_p["applicable_standards"][0]["standard_id"]
+    assert "2347" in res_p["applicable_standards"][0]["standard_id"]
     print(">> TEST 2 PASSED!")
 
-    # 3. Test Solar PV Standard Mapping
-    print("\n[TEST 3] Solar PV Module Standard Discovery:")
-    res_solar = match_product_to_standards("Crystalline Silicon Solar PV Rooftop Modules")
-    print(f"Mapped Solar Standard: {res_solar['applicable_standards'][0]['standard_id']}")
-    assert "14286" in res_solar['applicable_standards'][0]['standard_id']
+    # 3. Test Water Heater Standard Discovery
+    print("\n[TEST 3] Electric Water Heater Standard Discovery:")
+    res_heater = match_product_to_standards("Stationary storage electric water heaters geysers")
+    print(f"Mapped Water Heater Standard: {res_heater['applicable_standards'][0]['standard_id']}")
+    assert "302" in res_heater['applicable_standards'][0]['standard_id']
     print(">> TEST 3 PASSED!")
 
     # 4. Test Compliance Matrix & Readiness Score
     print("\n[TEST 4] Compliance Requirement Matrix & Readiness Score:")
-    res_c = evaluate_compliance(query="stainless steel water bottles")
+    res_c = evaluate_compliance(query="domestic pressure cookers")
     print(f"Compliance Readiness Score: {res_c['compliance_readiness_score']}%")
     print(f"AI Grounding Confidence: {res_c['ai_confidence_score']}%")
     print(f"Matrix Items Count: {len(res_c['matrix'])}")
@@ -56,13 +56,13 @@ async def test_v2_suite():
     # 5. Test Document Analyzer: Uploaded Sample Test Report
     print("\n[TEST 5] Test Report Matching & Gap Detection:")
     sample_report_text = """
-    LABORATORY TEST REPORT #TR-2024-9182
-    Product: Stainless Steel Vacuum Flask 750ml
-    Material: Chemical composition confirmed SS 304 austenitic grade (IS 6911). Chromium: 18.4%, Nickel: 8.2%.
-    Thermal Insulation Test: Initial water temperature 98°C. After 6 hours in climatic chamber at 27°C, recorded temperature was 64.5°C.
-    Leakage Test: Inversion test at 20 kPa showed zero leakage and no gasket displacement.
+    LABORATORY TEST REPORT #TR-2025-9182
+    Product: Domestic Pressure Cooker 5 Litre
+    Material: Chemical composition confirmed Wrought Aluminium Alloy IS 21. Aluminium: 99.2%, Lead: <0.005 mg/kg.
+    Hydrostatic Bursting Test: Pressure test at 300 kPa for 5 minutes showed zero rupture and zero leakage.
+    Operating Pressure: Nominal regulated pressure 102 kPa (Clause 5.4).
     """
-    res_doc = analyze_document_content("Test_Report_Flask.pdf", sample_report_text, "IS 17803:2022")
+    res_doc = analyze_document_content("Test_Report_Cooker.pdf", sample_report_text, "IS 2347:2017")
     print(f"Supported Requirements: {res_doc['supported_count']}")
     print(f"Missing Requirements: {res_doc['missing_count']}")
     print(f"Updated Compliance Readiness: {res_doc['updated_compliance_readiness']}%")
@@ -79,7 +79,7 @@ async def test_v2_suite():
 
     # 7. Test Standard Comparator
     print("\n[TEST 7] Side-by-Side Standard Comparison:")
-    res_cmp = compare_standards("IS 302-2-15", "IS 302 (Part 1)")
+    res_cmp = compare_standards("IS 15844 (Part 1)", "IS 15844 (Part 3)")
     print(f"Standard A: {res_cmp['standard_a']['id']}")
     print(f"Standard B: {res_cmp['standard_b']['id']}")
     assert len(res_cmp['comparison_table']) >= 8

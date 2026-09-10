@@ -48,25 +48,25 @@ export default function HomeDashboardView({
 
   const topStandards = [
     {
-      id: 'IS 17803 : 2022',
-      title: 'Stainless Steel Water Bottles - Specification',
+      id: 'IS 2347 : 2017',
+      title: 'Domestic Pressure Cookers - Specification',
       relevance: 'High',
       relevanceClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      status: 'Current'
+      status: 'Current / Mandatory QCO'
     },
     {
-      id: 'IS 302-1 : 2008',
-      title: 'Stainless Steel Vacuum Flasks - Specification',
+      id: 'IS 302 (Part 2/Sec 21) : 2024',
+      title: 'Stationary Storage Type Electric Water Heaters',
+      relevance: 'High',
+      relevanceClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      status: 'Mandatory QCO 2025'
+    },
+    {
+      id: 'IS 15844 (Part 1) : 2023',
+      title: 'Sports Footwear – Part 1 General Purpose',
       relevance: 'Medium',
       relevanceClass: 'bg-amber-50 text-amber-700 border-amber-200',
-      status: 'Current'
-    },
-    {
-      id: 'IS 10171 : 2019',
-      title: 'Drinking Water, Specification (Second Revision)',
-      relevance: 'Low',
-      relevanceClass: 'bg-blue-50 text-blue-700 border-blue-200',
-      status: 'Current'
+      status: 'Mandatory QCO 2024'
     }
   ];
 
@@ -275,14 +275,14 @@ export default function HomeDashboardView({
 
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-14 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center text-xl shrink-0">
-                    🍶
+                    🍳
                   </div>
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-bold text-slate-900 truncate">
-                      Stainless Steel Water Bottle (for Children)
+                      Domestic Pressure Cooker (Induction Base)
                     </h4>
                     <p className="text-[11px] font-semibold text-[#0b2545] mt-0.5">
-                      IS 17803 : 2022
+                      IS 2347 : 2017
                     </p>
                   </div>
                 </div>
@@ -352,7 +352,7 @@ export default function HomeDashboardView({
                       Upload the required safety test report.
                     </h4>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Why: Clause 5.2.1 of IS 17803:2022 requires safety performance test report from BIS-recognized lab.
+                      Why: Clause 6.1 of IS 2347:2017 requires hydrostatic bursting pressure test report from BIS-recognized lab.
                     </p>
                   </div>
 

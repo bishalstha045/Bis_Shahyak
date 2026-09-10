@@ -6,12 +6,12 @@ import ComplianceJourney from './ComplianceJourney';
 import { mapProductToStandard, evaluateComplianceMatrix } from '../services/api';
 
 const COMPLIANCE_EXAMPLES = [
-  "I manufacture stainless steel water bottles.",
-  "What safety standards apply to electric kettles?",
-  "IS 3196 के बारे में बताइए",
-  "Compare IS 302-2-15 and IS 302 (Part 1)",
-  "Which BIS certification do I need to export toys?",
-  "What are the BIS gold hallmarking and HUID rules?"
+  "I manufacture domestic pressure cookers.",
+  "What safety standards apply to electric storage water heaters (geysers)?",
+  "What are the mandatory QCO testing clauses for sports footwear under IS 15844?",
+  "Testing parameters for automated blood pressure monitors under IS 80601",
+  "What microbiological limits apply to packaged pasteurized milk under IS 13688?",
+  "What impact attenuation tests are mandatory for protective helmets under IS 4151?"
 ];
 
 const WHAT_YOULL_GET_ITEMS = [

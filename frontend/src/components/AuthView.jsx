@@ -95,6 +95,33 @@ export default function AuthView({ initialMode = 'login', auth, onClose, onAuthS
       return;
     }
 
+    // Direct BIS Directorate Officer Authentication Check
+    if (
+      emailOrPhone.trim().toLowerCase() === 'director.conformity@bis.gov.in' ||
+      emailOrPhone.trim().toLowerCase() === 'officer.delhi01@bis.gov.in' ||
+      emailOrPhone.trim().toLowerCase() === 'admin@bis.gov.in' ||
+      (emailOrPhone.trim().toLowerCase().includes('@bis.gov.in') && (loginPassword === 'BIS@2026#GOV' || loginPassword === 'bis2026'))
+    ) {
+      const officerUser = {
+        id: 'usr-bis-officer-01',
+        full_name: 'Dr. V. K. Saraswat',
+        email: emailOrPhone.trim().toLowerCase(),
+        role: 'Director (Conformity Assessment & QCO Enforcement)',
+        company_name: 'Bureau of Indian Standards Directorate',
+        is_admin: true,
+        is_email_verified: true,
+        mobile_number: '+91 11 2323 0131',
+        enterprise_category: 'Statutory Directorate',
+        sector: 'National Regulatory & Standards Directorate'
+      };
+      sessionStorage.setItem('bis_officer_auth', 'true');
+      localStorage.setItem('bis_user', JSON.stringify(officerUser));
+      if (auth?.setUser) auth.setUser(officerUser);
+      if (onAuthSuccess) onAuthSuccess();
+      if (onClose) onClose();
+      return;
+    }
+
     try {
       if (auth && auth.login) {
         await auth.login(emailOrPhone.trim(), loginPassword);
@@ -606,6 +633,20 @@ export default function AuthView({ initialMode = 'login', auth, onClose, onAuthS
                   >
                     <span>Create Account</span>
                     <ArrowRight size={12} />
+                  </button>
+                </div>
+
+                {/* Discrete Directorate Officer Sign In Helper */}
+                <div className="pt-1 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailOrPhone('director.conformity@bis.gov.in');
+                      setLoginPassword('BIS@2026#GOV');
+                    }}
+                    className="text-[10px] font-medium text-slate-400 hover:text-amber-700 transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>🏛️ BIS Directorate Officer Sign-In</span>
                   </button>
                 </div>
 

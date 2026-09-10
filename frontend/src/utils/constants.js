@@ -18,97 +18,103 @@ export const INDIC_LANGUAGES = [
 export const DEMO_WORKFLOW_PROMPTS = [
   {
     category: "Step 1: Product Mapping",
-    query: "I manufacture stainless steel water bottles.",
-    desc: "Identifies product characteristics & maps IS 17803:2022 / IS 17526:2021",
-    tag: "P0 Core Flow"
+    query: "I manufacture domestic pressure cookers.",
+    desc: "Identifies product characteristics & maps IS 2347:2017 with bursting pressure clauses",
+    tag: "Mandatory QCO"
   },
   {
-    category: "Step 2: Electrical Safety",
-    query: "What safety standards apply to electric kettles?",
-    desc: "Maps IS 302-2-15:2009 with boil-dry & thermal cut-out evidence",
-    tag: "QCO Mandate"
+    category: "Step 2: Electrical Water Heaters",
+    query: "What safety testing is mandatory for electric storage water heaters (geysers)?",
+    desc: "Maps IS 302 (Part 2/Sec 21):2024 & IS 2082:2018 with boil-dry and hydrostatic tests",
+    tag: "QCO 2025"
   },
   {
     category: "Step 3: हिंदी / Local Language",
-    query: "IS 3196 के बारे में बताइए",
-    desc: "LPG गैस सिलेंडर के परीक्षण, सामग्री और सुरक्षा मानक",
+    query: "IS 10500 पीने के पानी के मानक के बारे में बताइए",
+    desc: "पीने के पानी में टीडीएस, भारी धातु (आर्सेनिक/लेड) और कॉलीफॉर्म बैक्टीरिया परीक्षण",
     tag: "Hindi Voice"
   },
   {
     category: "Step 4: Standard Comparison",
-    query: "Compare IS 302-2-15 and IS 302 (Part 1)",
-    desc: "Side-by-side comparison of particular vs base electrical safety standards",
+    query: "Compare IS 15844 (Part 1) and IS 15844 (Part 3) for sports footwear",
+    desc: "Side-by-side comparison of General Purpose vs Professional Sports Footwear QCO rules",
     tag: "Comparison"
   },
   {
-    category: "Step 5: Toy Export Certification",
-    query: "Which BIS certification do I need to export toys?",
-    desc: "IS 9873 (Part 1 & 3) safety aspects, choking hazards & heavy metal limits",
-    tag: "Exports"
+    category: "Step 5: Medical Device Certification",
+    query: "What compliance is needed for sterile surgical gloves under IS 13422?",
+    desc: "ISO 10282 water tightness AQL 0.65, tensile before/after aging, and sterility assurance",
+    tag: "Medical Safety"
   },
   {
-    category: "Step 6: Gold Hallmarking & HUID",
-    query: "What are the BIS gold hallmarking and HUID rules?",
-    desc: "IS 1417 purity fineness grades and 6-digit laser HUID mandates",
-    tag: "Hallmarking"
+    category: "Step 6: Protective Equipment",
+    query: "What are the mandatory testing clauses for two-wheeler helmets under IS 4151?",
+    desc: "Shell impact attenuation peak 300g, chinstrap dynamic elongation, and penetration",
+    tag: "Road Safety QCO"
   }
 ];
 
 export const SAMPLE_DOCUMENTS = [
   {
-    name: "NABL_Test_Report_Stainless_Steel_Flask.pdf",
-    description: "NABL accredited lab report for 750ml vacuum insulated bottle (Supports Clauses 4.1, 5.2, 6.1 - Missing Clause 8.1)",
-    standard_id: "IS 17803:2022",
-    content: `NATIONAL ACCREDITED TESTING LABORATORY
-TEST REPORT NO: NABL/TR/2024/7719
-Sample: Double-Walled Stainless Steel Vacuum Flask (750 ml)
-Applicant: Alpha Stainless Works Ltd.
-Standard Referenced: IS 17803:2022
+    name: "NABL_Test_Report_Pressure_Cooker_5L.pdf",
+    description: "NABL accredited test report for 5 Litre aluminium induction pressure cooker (Supports Clauses 4.1, 5.4, 6.1 - Missing Clause 7.2)",
+    standard_id: "IS 2347:2017",
+    content: `NATIONAL ACCREDITED TESTING LABORATORY (NABL ACCREDITED)
+TEST REPORT NO: NABL/TR/2025/8812
+Sample Description: Domestic Pressure Cooker 5 Litres (Induction Base)
+Manufacturer: Bharat Cookware & Appliances Pvt. Ltd.
+Standard Referenced: IS 2347:2017
 
-1. Chemical Composition Analysis (Clause 4.1):
-- Material: Austenitic Stainless Steel Grade SS 304 (IS 6911)
-- Chromium: 18.35% (Requirement: >18.0%) -> PASS
-- Nickel: 8.22% (Requirement: >8.0%) -> PASS
-- Overall Migration in 3% Acetic Acid: 4.2 mg/kg (Limit: <60 mg/kg) -> PASS
+1. Material Composition Analysis (Clause 4.1):
+- Body Material: Wrought Aluminium Alloy IS 21 (Grade 40800)
+- Aluminium Purity: 99.25% (Requirement: Min 99.0%) -> PASS
+- Lead Extraction in Acetic Acid: 0.004 mg/kg (Limit: <0.01 mg/kg) -> PASS
+- Cadmium Extraction: Below Detection Limit (BDL) -> PASS
 
-2. Thermal Insulation Retention Test (Clause 5.2):
-- Initial Boiling Water Temperature: 98.5°C
-- Ambient Room Temperature: 27°C ± 1°C
-- 6-Hour Retention Temperature: 64.8°C (Minimum Requirement: 60°C) -> PASS
+2. Operating Pressure Regulation Test (Clause 5.4):
+- Nominal Working Steam Pressure: 102 kPa (Permissible Range: 90 kPa - 110 kPa) -> PASS
+- Vent Weight Free Movement: Satisfactory steam discharge -> PASS
 
-3. Inversion Leakage Test (Clause 6.1):
-- Pressure: 20 kPa internal pneumatic pressure for 30 minutes
-- Seepage / Gasket Deformation: None Observed (Zero Seepage) -> PASS
+3. Hydrostatic Bursting Pressure Safety Test (Clause 6.1):
+- Target Proof Pressure: 300 kPa (3.0 kgf/cm²) maintained for 5 minutes
+- Result: Zero leakage, zero body rupture, zero lid disengagement -> PASS
 
-CONCLUSION: The submitted sample conforms to Clauses 4.1, 5.2, and 6.1 of IS 17803:2022. Note: Marking and Laser Etching verification was not submitted in this lot.`
+4. Secondary Safety Fusible Plug Verification (Clause 7.2):
+- Fuse plug temperature rating: Not tested in this batch -> MISSING / PENDING
+
+CONCLUSION: Sample conforms to Clauses 4.1, 5.4, and 6.1 of IS 2347:2017. Secondary fusible plug calibration certificate must be submitted.`
   },
   {
-    name: "Type_Test_Report_Electric_Kettle_2200W.pdf",
-    description: "Electrical type test report for 1.7L cordless electric kettle (Supports Clauses 7.1, 13.2, 19.101 - Missing Clause 22.103)",
-    standard_id: "IS 302-2-15:2009",
+    name: "Type_Test_Report_Electric_Water_Heater_25L.pdf",
+    description: "Electrical type test certificate for 25L storage geyser (Supports Clauses 8.1, 13.2, 19.1 - Missing Clause 22.101)",
+    standard_id: "IS 302 (Part 2/Sec 21):2024",
     content: `CENTRAL ELECTRICAL TESTING LABORATORY
-TYPE TEST CERTIFICATE NO: CETL/2024/5521
-Product: Cordless Electric Kettle 1.7L (230V AC, 2200W)
-Standard: IS 302-2-15:2009 & IS 302 (Part 1):2008
+TYPE TEST CERTIFICATE NO: CETL/2025/3340
+Product: Stationary Storage Electric Water Heater 25L (230V AC, 2000W, 0.8 MPa)
+Standard: IS 302 (Part 2/Sec 21):2024 & IS 2082:2018
 
-1. Rating Marking & Instructions (Clause 7.1):
-- Voltage, Wattage, Model No, and ISI Logo layout present on base rating plate -> PASS
+1. Protection Against Access to Live Parts (Clause 8.1):
+- Probe B insertion: Zero contact with live terminal blocks -> PASS
+- Earth Continuity Resistance: 0.04 Ohm (Permissible Max: 0.1 Ohm) -> PASS
 
-2. Leakage Current & Dielectric Breakdown (Clause 13.2 & 16):
-- Dielectric Withstand: 1000V AC applied for 60 seconds with zero flashover -> PASS
-- Operating Leakage Current: Measured 0.24 mA (Permissible Max: 0.75 mA) -> PASS
+2. Leakage Current & High Voltage Dielectric Test (Clause 13.2):
+- Operating Temperature Leakage Current: 0.38 mA (Max Allowed: 0.75 mA) -> PASS
+- Dielectric High Voltage Withstand: 1250V AC applied for 60 seconds -> PASS
 
-3. Abnormal Operation & Boil-Dry Protection (Clause 19.101):
-- Energized without liquid: Bimetal thermal cut-out activated at 182°C within 38 seconds -> PASS
-- Casing flame or deformation: None observed -> PASS
+3. Abnormal Operation & Dry Boil Safety Trip (Clause 19.1):
+- Tank energized without water: Thermal cut-out disconnected circuit in 52 seconds -> PASS
+- Max surface temperature during trip: 112°C (Safe cutoff without flame) -> PASS
 
-CONCLUSION: Sample conforms to safety clauses 7.1, 13.2, and 19.101 of IS 302-2-15:2009.`
+4. Pressure Vessel Hydrostatic Proof Test (Clause 22.101):
+- 1.2 MPa hydraulic pressure test report pending from pressure vessel vendor -> NEEDS REVIEW
+
+CONCLUSION: Conforms to electrical safety clauses 8.1, 13.2, and 19.1 of IS 302 (Part 2/Sec 21):2024.`
   }
 ];
 
 export const COMPARISON_PAIRS = [
-  { std_a: "IS 302-2-15:2009", std_b: "IS 302 (Part 1):2008", label: "Electric Kettles vs General Safety" },
-  { std_a: "IS 17803:2022", std_b: "IS 17526:2021", label: "Vacuum Insulated vs Single-Wall Steel Bottles" },
-  { std_a: "IS 14543:2004", std_b: "IS 15410:2003", label: "Packaged Drinking Water vs PET Packaging" },
-  { std_a: "IS 9873 (Part 1):2019", std_b: "IS 9873 (Part 3):2020", label: "Toy Mechanical Safety vs Heavy Metal Toxicity" }
+  { std_a: "IS 15844 (Part 1):2023", std_b: "IS 15844 (Part 3):2024", label: "Sports Footwear: General Purpose vs Professional" },
+  { std_a: "IS 302 (Part 2/Sec 21):2024", std_b: "IS 302 (Part 1):2024", label: "Water Heaters vs General Electrical Safety" },
+  { std_a: "IS 269:2015", std_b: "IS 18189:2023", label: "Ordinary Portland Cement vs Low-Carbon Calcined Clay Cement" },
+  { std_a: "IS 18266:2023", std_b: "IS 13422:2024 / ISO 10282:2023", label: "Medical Respirators vs Sterile Surgical Gloves" }
 ];

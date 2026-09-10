@@ -19,26 +19,26 @@ export default function StandardComparisonView() {
       // Clean fallback demo data
       setCompResult({
         standard_a: {
-          id: a,
-          title: "Safety of Household and Similar Electrical Appliances - Electric Kettles",
-          scope: "Specific safety requirements for electric kettles, water heaters, and liquid boiling appliances up to 10L capacity.",
-          mandatory_tests: ["Clause 7.1: Power Input & Current", "Clause 13.2: Electric Strength at Operating Temp", "Clause 19.101: Abnormal Operation & Dry Boiling", "Clause 22.103: Cordless Base Interlock Mechanism"],
-          qco_status: "Mandatory ISI Marking under Electrical Appliances QCO"
+          id: a || "IS 15844 (Part 1):2023",
+          title: "Sports Footwear – Part 1 General Purpose - Specification",
+          scope: "General recreation and sports footwear across age groups; leisure walking and school athletic shoes.",
+          mandatory_tests: ["Clause 4.1: Chemical Harmlessness (Azo < 30mg/kg)", "Clause 5.1: Sole Abrasion Resistance (DIN < 250mm³)", "Clause 5.3: Sole Flexing Resistance (50,000 cycles)", "Clause 6.2: Upper-to-Sole Bond Strength (> 3.0 N/mm)"],
+          qco_status: "Mandatory ISI Marking under Footwear QCO 2024"
         },
         standard_b: {
-          id: b,
-          title: "Safety of Household and Similar Electrical Appliances - General Requirements",
-          scope: "General safety baseline governing electrical insulation, mechanical hazards, and fire prevention across all consumer appliances.",
-          mandatory_tests: ["Clause 8: Protection Against Access to Live Parts", "Clause 10: Power Input Rating Limits", "Clause 16: Leakage Current & Electric Strength", "Clause 20: Stability and Mechanical Hazards"],
-          qco_status: "Harmonized Parent Standard (IEC 60335-1 Modified)"
+          id: b || "IS 15844 (Part 3):2024",
+          title: "Sports Footwear – Part 3 Professional Sports Footwear",
+          scope: "Engineered footwear for high-impact professional competitive sports, athletics, sprinting, and court games.",
+          mandatory_tests: ["Clause 4.1: Heel Energy Absorption (> 25.0 Joules)", "Clause 5.2: Dynamic Sole Flexing Endurance (150,000 cycles)", "Clause 6.1: Wet Ceramic Slip Resistance Friction", "Clause 7.3: High-Tension Bond Peel Strength (> 4.0 N/mm)"],
+          qco_status: "Harmonized Specialized Athletic Performance Standard"
         },
         differences: [
-          { feature: "Regulatory Scope", a_val: "Specific product rule strictly for kettles & liquid heaters", b_val: "General safety baseline for all 100+ appliance categories" },
-          { feature: "Dry Boiling Protection", a_val: "Mandatory thermal cutoff under Clause 19.101", b_val: "General abnormal test without kettle-specific dry burn cycle" },
-          { feature: "Cordless Base Interlock", a_val: "Required 360-degree rotational connector safety test", b_val: "Standard appliance coupler rules only" },
-          { feature: "ISI Certification", a_val: "Must hold separate CM/L license for IS 302-2-15", b_val: "Tested concurrently with product-specific Part 2" }
+          { feature: "Flexing Endurance", a_val: "50,000 cycles on Ross flex tester (Crack <= 4mm)", b_val: "150,000 cycles on Bennewart machine (Crack <= 3mm)" },
+          { feature: "Impact Attenuation", a_val: "Standard recreational EVA midsole cushioning", b_val: "Mandatory Heel Energy Absorption >= 25 Joules dynamic drop test" },
+          { feature: "Bond Strength", a_val: "Minimum 3.0 N/mm peel adhesion", b_val: "Reinforced 4.0 N/mm athletic bonding strength" },
+          { feature: "Regulatory Order", a_val: "Mandatory DPIIT QCO 2024 enforcement for consumer sale", b_val: "Specialized performance specification for competitive sports" }
         ],
-        harmonization: "IS 302-2-15 must be read and implemented strictly in conjunction with IS 302 (Part 1). Both are aligned with IEC 60335-2-15."
+        harmonization: "Both standards are derived from ISO 20871 and ISO 17708 testing methodologies under the BIS Footwear Division Council (FDC)."
       });
     } finally {
       setLoading(false);
