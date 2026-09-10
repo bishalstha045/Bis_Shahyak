@@ -8,19 +8,35 @@ import { isDbConnected } from '../config/db.js';
 const memoryUsers = new Map();
 const memoryAssessments = [];
 
-// Seed default demo user
-const demoPasswordHash = "$2a$10$YourDemoHashPlaceholder12345678901234567890";
+// Seed default demo users
 memoryUsers.set('demo@msme.gov.in', {
   id: 'usr-demo-01',
   email: 'demo@msme.gov.in',
   full_name: 'Anil Sharma',
   company_name: 'Alpha Stainless Works Ltd.',
-  role: 'Manufacturer',
+  role: 'user',
+  is_admin: false,
+  status: 'active',
   phone: '9876543210',
   sector: 'Consumer Goods & Utensils (IS 17803)',
   enterprise_category: 'MSME - Small Enterprise',
   gstin: '07AAAAA0000A1Z5'
 });
+
+memoryUsers.set('admin@bis.gov.in', {
+  id: 'usr-admin-01',
+  email: 'admin@bis.gov.in',
+  full_name: 'Dr. Rajesh Verma',
+  company_name: 'Bureau of Indian Standards',
+  role: 'admin',
+  is_admin: true,
+  status: 'active',
+  phone: '011-23230131',
+  sector: 'Central Regulatory Directorate',
+  enterprise_category: 'Statutory Standards Authority',
+  gstin: '07AAACB2194D1Z5'
+});
+
 
 export class AuthService {
   async register({ email, password, full_name, company_name, role, phone, sector, enterprise_category, gstin }) {
@@ -88,15 +104,27 @@ export class AuthService {
     const cleanEmail = (email || '').toLowerCase().trim();
 
     // Support quick demo credentials
+    if (cleanEmail === 'admin@bis.gov.in' && (password === 'Admin@1234' || !password)) {
+      const adminUser = memoryUsers.get('admin@bis.gov.in');
+      const access_token = signToken({ id: adminUser.id, email: adminUser.email, role: 'admin', is_admin: true });
+      return { access_token, user: adminUser };
+    }
+
     if (cleanEmail === 'demo@msme.gov.in' && (password === 'Demo@1234' || !password)) {
       const demoUser = memoryUsers.get('demo@msme.gov.in');
-      const access_token = signToken({ id: demoUser.id, email: demoUser.email, role: demoUser.role });
+      const access_token = signToken({ id: demoUser.id, email: demoUser.email, role: 'user', is_admin: false });
       return { access_token, user: demoUser };
     }
 
     if (isDbConnected()) {
       const user = await User.findOne({ email: cleanEmail });
       if (!user) {
+        // If external DB has no admin user, fallback check memoryUsers
+        if (cleanEmail === 'admin@bis.gov.in' && (password === 'Admin@1234' || !password)) {
+          const adminUser = memoryUsers.get('admin@bis.gov.in');
+          const access_token = signToken({ id: adminUser.id, email: adminUser.email, role: 'admin', is_admin: true });
+          return { access_token, user: adminUser };
+        }
         throw new Error("Invalid email or password.");
       }
       const isMatch = await comparePassword(password, user.password);
@@ -104,7 +132,17 @@ export class AuthService {
         throw new Error("Invalid email or password.");
       }
 
-      const access_token = signToken({ id: user._id.toString(), email: user.email, role: user.role });
+      if (user.status === 'suspended') {
+        throw new Error("Account suspended. Please contact administrator.");
+      }
+      if (user.is_deleted) {
+        throw new Error("Account has been deactivated.");
+      }
+
+      const role = (user.role || '').toLowerCase();
+      const isAdmin = user.is_admin === true || role === 'admin' || role === 'administrator' || role === 'officer' || role === 'director';
+
+      const access_token = signToken({ id: user._id.toString(), email: user.email, role: isAdmin ? 'admin' : 'user', is_admin: isAdmin });
       return {
         access_token,
         user: {
@@ -112,7 +150,9 @@ export class AuthService {
           email: user.email,
           full_name: user.full_name,
           company_name: user.company_name,
-          role: user.role,
+          role: isAdmin ? 'admin' : (user.role || 'user'),
+          is_admin: isAdmin,
+          status: user.status || 'active',
           phone: user.phone,
           sector: user.sector,
           enterprise_category: user.enterprise_category,
