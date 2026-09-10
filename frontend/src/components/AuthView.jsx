@@ -609,6 +609,20 @@ export default function AuthView({ initialMode = 'login', auth, onClose, onAuthS
                   </button>
                 </div>
 
+                {/* Directorate Officer Gateway Link */}
+                <div className="pt-1 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onClose) onClose();
+                      if (onNavigate) onNavigate('admin');
+                    }}
+                    className="text-[10px] font-medium text-slate-400 hover:text-blue-700 transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>🏛️ Regulatory Directorate Gateway</span>
+                  </button>
+                </div>
+
               </div>
             )}
 

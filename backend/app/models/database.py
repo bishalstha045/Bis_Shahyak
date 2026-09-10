@@ -111,14 +111,14 @@ def init_db():
     )
     """)
     
-    # Seed Demo User: demo@msme.gov.in / Demo@1234
-    cursor.execute("SELECT id FROM users WHERE email = 'demo@msme.gov.in'")
+    # Seed Demo User for testing
+    cursor.execute("SELECT id FROM users WHERE email = 'demo.user@example.com'")
     if not cursor.fetchone():
-        demo_pwd_hash = hash_password("Demo@1234")
+        demo_pwd_hash = hash_password("TestingPass123!")
         cursor.execute("""
         INSERT INTO users (email, password_hash, full_name, company_name, role)
         VALUES (?, ?, ?, ?, ?)
-        """, ('demo@msme.gov.in', demo_pwd_hash, 'Ramesh Sharma', 'Shree Ram Industries (MSME)', 'Quality Lead'))
+        """, ('demo.user@example.com', demo_pwd_hash, 'Ramesh Sharma', 'Shree Ram Industries (MSME)', 'Quality Lead'))
     
     # Seed Official BIS Verified Licenses
     seed_licenses = [

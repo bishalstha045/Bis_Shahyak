@@ -17,7 +17,7 @@ export default function StandardsView({
   const itemsPerPage = 5;
 
   useEffect(() => {
-    fetch('/backend/data/standards_metadata.json')
+    fetch('/standards_metadata.json')
       .then(res => res.json())
       .then(data => setStandards(data))
       .catch(() => {
@@ -29,49 +29,61 @@ export default function StandardsView({
 
   const categories = [
     'All Categories',
-    'Electronics',
-    'Metals',
-    'Chemicals',
+    'Electrical',
+    'Medical',
     'Food',
+    'Footwear',
     'Textiles',
     'Construction',
-    'Renewable Energy'
+    'Chemicals',
+    'Safety'
   ];
 
   // Helper to get category mapping and thumbnails
   const getStandardThumbnail = (std) => {
     const title = (std.title || '').toLowerCase();
     const id = (std.id || '').toLowerCase();
-    if (id.includes('17803') || id.includes('17526') || title.includes('bottle') || title.includes('flask')) return '🍶';
-    if (id.includes('302') || title.includes('kettle') || title.includes('appliance')) return '⚡';
-    if (id.includes('269') || title.includes('cement')) return '🏗️';
-    if (id.includes('1786') || id.includes('432') || title.includes('steel') || title.includes('bar')) return '🔩';
-    if (id.includes('3025') || id.includes('14543') || id.includes('13428') || title.includes('water')) return '💧';
-    if (id.includes('3196') || title.includes('cylinder') || title.includes('lpg')) return '🛢️';
-    if (id.includes('9873') || title.includes('toy')) return '🧸';
-    if (id.includes('1417') || id.includes('2112') || title.includes('gold') || title.includes('silver')) return '🪙';
-    if (id.includes('14286') || title.includes('solar') || title.includes('pv')) return '☀️';
+    if (id.includes('2347') || title.includes('cooker')) return '🍳';
+    if (id.includes('18739') || title.includes('bedsheet') || title.includes('textile')) return '🛏️';
+    if (id.includes('80601') || title.includes('sphygmomanometer') || title.includes('blood pressure')) return '🩺';
+    if (id.includes('18266') || title.includes('respirator')) return '😷';
+    if (id.includes('13422') || title.includes('glove')) return '🧤';
+    if (id.includes('15844') || title.includes('footwear') || title.includes('shoe')) return '👟';
+    if (id.includes('13688') || title.includes('milk')) return '🥛';
+    if (id.includes('2557') || title.includes('annatto') || title.includes('colour')) return '🎨';
+    if (id.includes('2791') || title.includes('coffee')) return '☕';
+    if (id.includes('15787') || title.includes('socket')) return '🔌';
+    if (id.includes('411') || title.includes('titanium') || title.includes('dioxide')) return '🧪';
+    if (id.includes('3652') || title.includes('sprayer') || title.includes('crop')) return '🌾';
+    if (id.includes('9131') || title.includes('lock') || title.includes('latch')) return '🔒';
+    if (id.includes('10086') || title.includes('mould')) return '🧱';
+    if (id.includes('4658') || title.includes('paper') || title.includes('board')) return '📜';
+    if (id.includes('269') || id.includes('18189') || title.includes('cement')) return '🏗️';
     if (id.includes('4151') || title.includes('helmet')) return '⛑️';
-    if (id.includes('16289') || title.includes('mask')) return '😷';
+    if (id.includes('10500') || title.includes('water')) return '💧';
+    if (id.includes('302') || title.includes('heater') || title.includes('geyser') || title.includes('washing') || title.includes('iron') || title.includes('appliance')) return '⚡';
     return '📄';
   };
 
   const getEffectiveDate = (std) => {
-    if (std.year) return `Effective: 15 Nov ${std.year}`;
-    return 'Effective: Gazetted Standard';
+    if (std.effective_date) return `Effective: ${std.effective_date}`;
+    if (std.year) return `Effective: Year ${std.year}`;
+    return 'Effective: Current Gazetted Standard';
   };
 
   const getCategorySubtitle = (std) => {
     const sec = std.sector || '';
-    if (sec.includes('Utensil')) return 'Stainless Steel Products';
-    if (sec.includes('Electrical')) return 'Electrical Appliances';
-    if (sec.includes('Civil') || sec.includes('Building')) return 'Cement & Concrete';
-    if (sec.includes('Steel') || sec.includes('Rebars')) return 'Iron & Steel';
-    if (sec.includes('Food') || sec.includes('Water')) return 'Water & Environment';
-    if (sec.includes('Gas') || sec.includes('Pressure')) return 'Pressure Vessels & Gas';
-    if (sec.includes('Solar')) return 'Solar & Photovoltaics';
-    if (sec.includes('Toy')) return 'Safety of Toys';
-    return std.product_category || 'Industrial Specifications';
+    if (sec.includes('Electrical')) return 'Electrical Appliances & Safety';
+    if (sec.includes('Medical')) return 'Medical Devices & Healthcare';
+    if (sec.includes('Food') || sec.includes('Additives')) return 'Food, Dairy & Public Health';
+    if (sec.includes('Footwear')) return 'Footwear & Athletic Gear';
+    if (sec.includes('Textiles')) return 'Textiles & Bedding Materials';
+    if (sec.includes('Construction') || sec.includes('Civil') || sec.includes('Cement')) return 'Civil Infrastructure & Cement';
+    if (sec.includes('Utensils') || sec.includes('Utensil')) return 'Domestic Utensils & Cookware';
+    if (sec.includes('Automotive')) return 'Vehicle & Personal Protection';
+    if (sec.includes('Chemicals') || sec.includes('Paper') || sec.includes('Agriculture')) return 'Chemicals, Paper & Agrochemicals';
+    if (sec.includes('Hardware') || sec.includes('Security')) return 'Building Hardware & Locks';
+    return std.sector || 'National Standards Specification';
   };
 
   const getRelevanceBadge = (idx) => {

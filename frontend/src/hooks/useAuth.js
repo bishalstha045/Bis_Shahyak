@@ -351,11 +351,38 @@ export function useAuth() {
     setLoading(true);
     setError(null);
 
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    // 0. Support official administrator login via backend
+    if (cleanEmail.includes('admin') || cleanEmail.includes('director') || cleanEmail.includes('officer')) {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail, password })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          setToken(data.access_token);
+          setAuthState(AUTH_STATES.AUTHENTICATED);
+          localStorage.setItem('bis_user', JSON.stringify(data.user));
+          localStorage.setItem('bis_token', data.access_token);
+          localStorage.removeItem('bis_pending_verification');
+          setPendingVerification(null);
+          return data.user;
+        }
+      } catch (adminErr) {
+        console.warn("Admin backend auth attempt:", adminErr.message);
+      }
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
       });
+
 
       if (error) {
         throw new Error(formatAuthError(error));
@@ -640,10 +667,11 @@ export function useAuth() {
   const quickDemoLogin = async () => {
     const demoUser = {
       id: 'usr-demo-01',
-      email: 'demo@msme.gov.in',
+      email: 'demo.manufacturer@example.com',
       full_name: 'Anil Sharma',
       company_name: 'Alpha Stainless Works Ltd.',
-      role: 'Manufacturer',
+      role: 'user',
+      is_admin: false,
       enterprise_category: 'MSME - Small Enterprise',
       sector: 'Consumer Goods & Utensils (IS 17803)',
       is_email_verified: true,
@@ -657,6 +685,51 @@ export function useAuth() {
     localStorage.removeItem('bis_pending_verification');
     setPendingVerification(null);
     return demoUser;
+  };
+
+  // 8b. Official Administrator Demo Login
+  const adminDemoLogin = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/demo-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+        setToken(data.access_token);
+        setAuthState(AUTH_STATES.AUTHENTICATED);
+        localStorage.setItem('bis_user', JSON.stringify(data.user));
+        localStorage.setItem('bis_token', data.access_token);
+        localStorage.removeItem('bis_pending_verification');
+        setPendingVerification(null);
+        return data.user;
+      }
+    } catch (e) {
+      console.warn("Backend admin login:", e);
+    }
+
+    const adminUser = {
+      id: 'usr-admin-01',
+      email: 'officer@standards.local',
+      full_name: 'Dr. Rajesh Verma',
+      company_name: 'Central Regulatory Authority',
+      role: 'admin',
+      is_admin: true,
+      status: 'active',
+      enterprise_category: 'Statutory Standards Authority',
+      sector: 'Central Regulatory Directorate',
+      is_email_verified: true,
+      has_organization: true
+    };
+    setUser(adminUser);
+    setToken('admin-demo-token-12345');
+    setAuthState(AUTH_STATES.AUTHENTICATED);
+    localStorage.setItem('bis_user', JSON.stringify(adminUser));
+    localStorage.setItem('bis_token', 'admin-demo-token-12345');
+    localStorage.removeItem('bis_pending_verification');
+    setPendingVerification(null);
+    return adminUser;
   };
 
   // 9. Sign Out
@@ -703,9 +776,11 @@ export function useAuth() {
     completeOrganizationOnboarding,
     resetPassword,
     quickDemoLogin,
+    adminDemoLogin,
     logout,
     clearGoogleNotice,
     clearPendingVerification,
     setError
   };
-}
+};
+
