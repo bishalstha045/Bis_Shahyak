@@ -113,3 +113,186 @@ export async function downloadChecklistPDF({ product_description, standards, lan
   document.body.removeChild(a);
   window.URL.revokeObjectURL(url);
 }
+
+// -------------------------------------------------------------
+// Dedicated Administrative API Client (Secured with Admin Token)
+// -------------------------------------------------------------
+const getAdminHeaders = () => {
+  const token = localStorage.getItem('bis_token') || 'admin-demo-token-12345';
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+};
+
+export async function getAdminStats() {
+  const res = await fetch(`${API_BASE}/api/admin/dashboard/stats`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load admin stats: ${res.status}`);
+  const json = await res.json();
+  return json.data;
+}
+
+export async function getAdminVerifications({ search = '', status = 'ALL', category = 'ALL' } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (status && status !== 'ALL') params.append('status', status);
+  if (category && category !== 'ALL') params.append('category', category);
+
+  const res = await fetch(`${API_BASE}/api/admin/verifications?${params.toString()}`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load verifications: ${res.status}`);
+  const json = await res.json();
+  return json.data?.submissions || [];
+}
+
+export async function getAdminVerificationById(id) {
+  const res = await fetch(`${API_BASE}/api/admin/verifications/${id}`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load submission: ${res.status}`);
+  const json = await res.json();
+  return json.data?.submission;
+}
+
+export async function approveAdminVerification(id) {
+  const res = await fetch(`${API_BASE}/api/admin/verifications/${id}/approve`, {
+    method: 'POST',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Approval failed (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data?.submission;
+}
+
+export async function rejectAdminVerification(id, rejectionReason) {
+  const res = await fetch(`${API_BASE}/api/admin/verifications/${id}/reject`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ rejection_reason: rejectionReason })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Rejection failed (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data?.submission;
+}
+
+export async function getAdminUsers({ search = '', role = 'ALL', status = 'ALL' } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (role && role !== 'ALL') params.append('role', role);
+  if (status && status !== 'ALL') params.append('status', status);
+
+  const res = await fetch(`${API_BASE}/api/admin/users?${params.toString()}`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load users: ${res.status}`);
+  const json = await res.json();
+  return json.data?.users || [];
+}
+
+export async function updateAdminUserStatus(id, status) {
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}/status`, {
+    method: 'PATCH',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Status update failed (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data?.user;
+}
+
+export async function deleteAdminUser(id) {
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Delete failed (${res.status})`);
+  }
+  return await res.json();
+}
+
+export async function getAdminReports({ search = '', status = 'ALL' } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (status && status !== 'ALL') params.append('status', status);
+
+  const res = await fetch(`${API_BASE}/api/admin/reports?${params.toString()}`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load reports: ${res.status}`);
+  const json = await res.json();
+  return json.data?.reports || [];
+}
+
+export async function resolveAdminReport(id, { resolution_notes, action_taken } = {}) {
+  const res = await fetch(`${API_BASE}/api/admin/reports/${id}/resolve`, {
+    method: 'PATCH',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ resolution_notes, action_taken })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Resolution failed (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data?.report;
+}
+
+export async function dismissAdminReport(id, { notes } = {}) {
+  const res = await fetch(`${API_BASE}/api/admin/reports/${id}/dismiss`, {
+    method: 'PATCH',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ notes })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Dismiss failed (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data?.report;
+}
+
+export async function getAdminActivity({ limit = 50, target_type = 'ALL' } = {}) {
+  const params = new URLSearchParams();
+  params.append('limit', limit);
+  if (target_type && target_type !== 'ALL') params.append('target_type', target_type);
+
+  const res = await fetch(`${API_BASE}/api/admin/activity?${params.toString()}`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load activity logs: ${res.status}`);
+  const json = await res.json();
+  return json.data?.activities || [];
+}
+
+export async function getAdminContent() {
+  const res = await fetch(`${API_BASE}/api/admin/content`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load content stats: ${res.status}`);
+  const json = await res.json();
+  return json.data;
+}
+
+export async function getAdminSettings() {
+  const res = await fetch(`${API_BASE}/api/admin/settings`, {
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to load admin settings: ${res.status}`);
+  const json = await res.json();
+  return json.data;
+}
+

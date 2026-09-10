@@ -8,25 +8,40 @@ import DocumentAnalyzerView from './components/DocumentAnalyzerView';
 import VerificationView from './components/VerificationView';
 import StandardComparisonView from './components/StandardComparisonView';
 import NotificationsView from './components/NotificationsView';
+import AdminPanel from './components/admin/AdminPanel';
 import ChatInterface from './components/ChatInterface';
 import ISIVerifierModal from './components/ISIVerifierModal';
 import ComplianceChecklist from './components/ComplianceChecklist';
 import EvidenceModal from './components/EvidenceModal';
 import AuthModal from './components/AuthModal';
+import ProfileModal from './components/ProfileModal';
 import HelpModal from './components/HelpModal';
 import { useChat } from './hooks/useChat';
 import { useAuth } from './hooks/useAuth';
 import { getDatasetStats } from './services/api';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'standards' | 'compliance' | 'documents' | 'verification' | 'compare' | 'assistant' | 'notifications'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      if (
+        window.location.pathname.startsWith('/admin') ||
+        window.location.hash === '#admin' ||
+        window.location.hash.startsWith('#admin/') ||
+        window.location.search.includes('admin=true')
+      ) {
+        return 'admin';
+      }
+    }
+    return 'home';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [language, setLanguage] = useState('auto');
-  const [indexedCount, setIndexedCount] = useState(21);
-  const [complianceInitialQuery, setComplianceInitialQuery] = useState("I manufacture stainless steel water bottles");
+  const [indexedCount, setIndexedCount] = useState(24);
+  const [complianceInitialQuery, setComplianceInitialQuery] = useState("I manufacture domestic pressure cookers");
 
   // Global Modals
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [activeEvidence, setActiveEvidence] = useState(null);
@@ -35,6 +50,42 @@ export default function App() {
 
   const auth = useAuth();
   const { messages, isLoading, streamingText, sendMessage, clearMessages } = useChat();
+
+  // Listen to browser URL path and hash changes for direct /admin and #admin access
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const isPathAdmin = window.location.pathname.startsWith('/admin');
+      const isHashAdmin = window.location.hash === '#admin' || window.location.hash.startsWith('#admin/');
+      const isQueryAdmin = window.location.search.includes('admin=true');
+
+      if (isPathAdmin || isHashAdmin || isQueryAdmin) {
+        setActiveTab('admin');
+      } else if (activeTab === 'admin') {
+        setActiveTab('home');
+      }
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, [activeTab]);
+
+  const handleTabChange = (tab) => {
+    if (tab === 'admin') {
+      window.history.pushState({}, '', '/admin/dashboard');
+      setActiveTab('admin');
+    } else {
+      if (window.location.pathname.startsWith('/admin')) {
+        window.history.pushState({}, '', '/');
+      } else if (window.location.hash === '#admin') {
+        history.pushState("", document.title, window.location.pathname + window.location.search);
+      }
+      setActiveTab(tab);
+    }
+  };
 
   useEffect(() => {
     getDatasetStats().then(data => {
@@ -76,8 +127,19 @@ export default function App() {
       query: `Tell me about ${std.id} (${std.title}), its scope, mandatory testing clauses, and certification rules.`,
       language
     });
-    setActiveTab('assistant');
+    handleTabChange('assistant');
   };
+
+  // Dedicated Separately Accessible Admin Control Panel
+  if (activeTab === 'admin') {
+    return (
+      <AdminPanel
+        auth={auth}
+        onExitToManufacturer={() => handleTabChange('home')}
+      />
+    );
+  }
+
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#f8fafc] text-slate-900 font-sans">
@@ -89,8 +151,9 @@ export default function App() {
         onLanguageChange={setLanguage}
         auth={auth}
         onOpenAuthModal={() => setAuthModalOpen(true)}
+        onOpenProfile={() => setProfileModalOpen(true)}
         onOpenHelp={() => setHelpModalOpen(true)}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         activeTab={activeTab}
       />
 
@@ -102,8 +165,9 @@ export default function App() {
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           onOpenHelp={() => setHelpModalOpen(true)}
+          auth={auth}
         />
 
         {/* Dynamic Workspace View */}
@@ -187,6 +251,13 @@ export default function App() {
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
+        auth={auth}
+        onNavigate={setActiveTab}
+      />
+
+      <ProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
         auth={auth}
         onNavigate={setActiveTab}
       />
