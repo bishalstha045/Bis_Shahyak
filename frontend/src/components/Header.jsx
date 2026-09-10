@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, HelpCircle, Bell, User, LogOut, Globe, ChevronRight, Menu, CheckCircle2, AlertTriangle, ShieldCheck, ArrowRight, ChevronDown } from 'lucide-react';
+import { Sparkles, HelpCircle, Bell, User, LogOut, Globe, ChevronRight, Menu, CheckCircle2, AlertTriangle, ShieldCheck, ArrowRight, ChevronDown, Building2, Award } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 
 export default function Header({
@@ -7,24 +7,31 @@ export default function Header({
   onLanguageChange,
   onOpenHelp,
   onOpenAuthModal,
+  onOpenProfile,
   auth,
   onMenuClick,
-  onTabChange
+  onTabChange,
+  activeTab
 }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
+  const userDropdownRef = useRef(null);
 
   // When a user logs in or switches, resolve unread notifications for a clean state
   useEffect(() => {
     setUnreadCount(0);
   }, [auth?.user?.id]);
 
-  // Click outside listener for notification dropdown
+  // Click outside listener for dropdowns
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowNotifDropdown(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -68,6 +75,14 @@ export default function Header({
       target: 'documents'
     }
   ];
+
+  const isOfficer = Boolean(
+    auth?.user?.is_admin === true ||
+    auth?.user?.role?.toLowerCase().includes('admin') ||
+    auth?.user?.role?.toLowerCase().includes('officer') ||
+    auth?.user?.role?.toLowerCase().includes('director') ||
+    (typeof window !== 'undefined' && sessionStorage.getItem('bis_officer_auth') === 'true')
+  );
 
   return (
     <header className="w-full bg-white border-b border-slate-200/90 sticky top-0 z-30 shrink-0 shadow-2xs font-sans select-none">
@@ -233,37 +248,110 @@ export default function Header({
 
           {/* User Profile / Sign In Button */}
           {auth?.user ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-[#0b2545] text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">
-                {auth.user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'AS'}
-              </div>
-              <div className="hidden sm:flex flex-col text-left leading-tight">
-                <span className="text-xs font-bold text-slate-900 truncate max-w-[120px]">
-                  {auth.user.full_name}
-                </span>
-                <span className="text-[10px] text-slate-500 truncate max-w-[120px]">
-                  {auth.user.company_name || 'Alpha Stainless Works...'}
-                </span>
-              </div>
-              <ChevronDown size={14} className="text-slate-400" />
+            <div className="relative" ref={userDropdownRef}>
               <button
                 type="button"
-                onClick={() => auth.logout()}
-                className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors ml-1 rounded-lg hover:bg-rose-50"
-                title="Sign Out"
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center gap-2 pl-2 border-l border-slate-200 hover:opacity-80 transition-opacity text-left"
               >
-                <LogOut size={15} />
+                <div className="w-8 h-8 rounded-full bg-[#0b2545] text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">
+                  {auth.user.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'AS'}
+                </div>
+                <div className="hidden sm:flex flex-col leading-tight">
+                  <span className="text-xs font-bold text-slate-900 truncate max-w-[120px]">
+                    {auth.user.full_name}
+                  </span>
+                  <span className="text-[10px] text-slate-500 truncate max-w-[120px]">
+                    {auth.user.company_name || 'Enterprise'}
+                  </span>
+                </div>
+                <ChevronDown size={14} className="text-slate-400" />
               </button>
+
+              {/* User Profile Dropdown Menu */}
+              {showUserDropdown && (
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3.5 space-y-3 z-50 animate-fade-in text-xs font-normal">
+                  {/* Header info */}
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <p className="font-bold text-slate-900 text-sm">{auth.user.full_name}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{auth.user.email || 'manufacturer@portal.in'}</p>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#0b2545] font-bold text-[10px] border border-blue-200">
+                        {auth.user.role || 'Manufacturer'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200 flex items-center gap-1">
+                        <Award size={10} />
+                        MSME 50% Subsidy
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        onOpenProfile && onOpenProfile();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-colors"
+                    >
+                      <Building2 size={15} className="text-blue-600" />
+                      <span>My Enterprise Profile & GSTIN</span>
+                    </button>
+
+                    {isOfficer && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onTabChange && onTabChange('admin');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-colors"
+                      >
+                        <span className="text-sm">🛡️</span>
+                        <span>Admin Panel</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Footer Logout */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        auth.logout();
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-rose-600 hover:bg-rose-50 font-bold transition-colors"
+                    >
+                      <LogOut size={13} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={onOpenAuthModal}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white text-xs font-bold transition-all shadow-xs"
-            >
-              <User size={15} />
-              <span>Sign In</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs"
+                title="View or edit Enterprise Profile & MSME setup"
+              >
+                <Building2 size={14} className="text-blue-600" />
+                <span>Enterprise Profile</span>
+              </button>
+              <button
+                type="button"
+                onClick={onOpenAuthModal}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white text-xs font-bold transition-all shadow-xs"
+              >
+                <User size={15} />
+                <span>Sign In</span>
+              </button>
+            </div>
           )}
 
         </div>

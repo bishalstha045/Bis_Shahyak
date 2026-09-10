@@ -1,13 +1,20 @@
 # Environment & Secrets
 .env
-.env.local
-.env.*.local
-backend/.env
-frontend/.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.cert
+*.pfx
+secrets/
 backend/:memory:.ses
 *.ses
 backend/uploads/*
 !backend/uploads/.gitkeep
+
 
 # Python & Virtual Environments
 __pycache__/

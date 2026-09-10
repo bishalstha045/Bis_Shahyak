@@ -1,13 +1,22 @@
 import React from 'react';
-import { Home, BookOpen, ShieldCheck, FileCheck, BadgeCheck, Sparkles, Scale, Bell, Headphones, X } from 'lucide-react';
+import { Home, BookOpen, ShieldCheck, FileCheck, BadgeCheck, Sparkles, Scale, Bell, Headphones, X, Landmark } from 'lucide-react';
 
 export default function Sidebar({
   isOpen,
   onClose,
   activeTab,
   onTabChange,
-  onOpenHelp
+  onOpenHelp,
+  auth
 }) {
+  const isOfficer = Boolean(
+    auth?.user?.is_admin === true ||
+    auth?.user?.role?.toLowerCase().includes('admin') ||
+    auth?.user?.role?.toLowerCase().includes('officer') ||
+    auth?.user?.role?.toLowerCase().includes('director') ||
+    (typeof window !== 'undefined' && sessionStorage.getItem('bis_officer_auth') === 'true')
+  );
+
   const navigationItems = [
     { id: 'home', label: 'Home', icon: <Home size={18} /> },
     { id: 'standards', label: 'Standards', icon: <BookOpen size={18} /> },
@@ -16,7 +25,7 @@ export default function Sidebar({
     { id: 'verification', label: 'Verification', icon: <BadgeCheck size={18} /> },
     { id: 'assistant', label: 'AI Assistant', icon: <Sparkles size={18} /> },
     { id: 'compare', label: 'Compare', icon: <Scale size={18} /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> },
+    { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> }
   ];
 
   return (
