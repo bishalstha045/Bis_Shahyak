@@ -1,45 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { X, Building2, User, Phone, Mail, MapPin, Award, CheckCircle2, ShieldCheck, Sparkles, AlertCircle, Save, ExternalLink } from 'lucide-react';
+import { X, Building2, User, MapPin, Award, CheckCircle2, ShieldCheck, Save } from 'lucide-react';
 
 export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
   if (!isOpen) return null;
 
-  const currentUser = auth?.user || {
-    full_name: 'Anil Sharma',
-    email: 'demo@msme.gov.in',
-    company_name: 'Bharat Cookware & Appliances Pvt. Ltd.',
-    mobile_number: '+91 98765 43210',
-    role: 'Quality Lead',
-    enterprise_category: 'MSME - Small Enterprise',
-    sector: 'Consumer Goods & Utensils',
-    gstin: '07AAACB2194D1Z5',
-    udyam_number: 'UDYAM-DL-01-0029182',
-    factory_address: 'Plot 42, Sector 8, Industrial Estate, IMT Manesar',
-    state: 'Haryana',
-    district: 'Gurugram',
-    pincode: '122051'
-  };
+  const [formData, setFormData] = useState(() => ({
+    full_name: auth?.user?.full_name || '',
+    email: auth?.user?.email || '',
+    mobile_number: auth?.user?.mobile_number || '',
+    role: auth?.user?.role || '',
+    company_name: auth?.user?.company_name || '',
+    enterprise_category: auth?.user?.enterprise_category || 'MSME - Small Enterprise',
+    sector: auth?.user?.sector || 'Consumer Goods & Utensils',
+    gstin: auth?.user?.gstin || '',
+    udyam_number: auth?.user?.udyam_number || '',
+    factory_address: auth?.user?.factory_address || '',
+    state: auth?.user?.state || '',
+    district: auth?.user?.district || '',
+    pincode: auth?.user?.pincode || ''
+  }));
 
-  const [formData, setFormData] = useState({
-    full_name: currentUser.full_name || '',
-    email: currentUser.email || '',
-    mobile_number: currentUser.mobile_number || '',
-    role: currentUser.role || 'Manufacturer',
-    company_name: currentUser.company_name || '',
-    enterprise_category: currentUser.enterprise_category || 'MSME - Small Enterprise',
-    sector: currentUser.sector || 'Consumer Goods & Utensils',
-    gstin: currentUser.gstin || '07AAACB2194D1Z5',
-    udyam_number: currentUser.udyam_number || 'UDYAM-DL-01-0029182',
-    factory_address: currentUser.factory_address || 'Plot 42, Sector 8, Industrial Area, Manesar',
-    state: currentUser.state || 'Haryana',
-    district: currentUser.district || 'Gurugram',
-    pincode: currentUser.pincode || '122051'
-  });
+  // Keep form synchronized when opening or when authenticated user data updates
+  useEffect(() => {
+    if (auth?.user) {
+      setFormData({
+        full_name: auth.user.full_name || '',
+        email: auth.user.email || '',
+        mobile_number: auth.user.mobile_number || '',
+        role: auth.user.role || '',
+        company_name: auth.user.company_name || '',
+        enterprise_category: auth.user.enterprise_category || 'MSME - Small Enterprise',
+        sector: auth.user.sector || 'Consumer Goods & Utensils',
+        gstin: auth.user.gstin || '',
+        udyam_number: auth.user.udyam_number || '',
+        factory_address: auth.user.factory_address || '',
+        state: auth.user.state || '',
+        district: auth.user.district || '',
+        pincode: auth.user.pincode || ''
+      });
+    }
+  }, [auth?.user, isOpen]);
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('enterprise'); // 'enterprise' | 'representative' | 'factory'
 
-  const isMsme = formData.enterprise_category.includes('MSME') || formData.enterprise_category.includes('Small') || formData.enterprise_category.includes('Micro');
+  const isMsme = Boolean(
+    formData.enterprise_category &&
+    (formData.enterprise_category.includes('MSME') ||
+     formData.enterprise_category.includes('Small') ||
+     formData.enterprise_category.includes('Micro'))
+  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,7 +59,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
   const handleSave = (e) => {
     e.preventDefault();
     const updatedUser = {
-      ...currentUser,
+      ...(auth?.user || {}),
       ...formData
     };
 
@@ -189,7 +199,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     name="gstin"
                     value={formData.gstin}
                     onChange={handleChange}
-                    placeholder="07AAACB2194D1Z5"
+                    placeholder="e.g. 07AAACB2194D1Z5"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545] uppercase"
                   />
                 </div>
@@ -203,7 +213,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     name="udyam_number"
                     value={formData.udyam_number}
                     onChange={handleChange}
-                    placeholder="UDYAM-DL-01-0029182"
+                    placeholder="e.g. UDYAM-DL-01-0029182"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545] uppercase"
                   />
                 </div>
@@ -264,7 +274,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     value={formData.full_name}
                     onChange={handleChange}
                     required
-                    placeholder="e.g. Anil Sharma"
+                    placeholder="e.g. Saroj Shrestha"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545] font-medium"
                   />
                 </div>
@@ -295,7 +305,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    placeholder="compliance@yourcompany.com"
+                    placeholder="e.g. compliance@yourcompany.com"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545] font-medium"
                   />
                 </div>
@@ -309,7 +319,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     name="mobile_number"
                     value={formData.mobile_number}
                     onChange={handleChange}
-                    placeholder="+91 98765 43210"
+                    placeholder="e.g. +91 98765 43210"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545] font-medium"
                   />
                 </div>
@@ -335,7 +345,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                   value={formData.factory_address}
                   onChange={handleChange}
                   rows={2}
-                  placeholder="Plot number, industrial area, road name"
+                  placeholder="e.g. Plot 42, Sector 8, Industrial Model Township, IMT Manesar"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545] font-medium"
                 />
               </div>
@@ -350,7 +360,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
-                    placeholder="Haryana"
+                    placeholder="e.g. Haryana"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545]"
                   />
                 </div>
@@ -363,7 +373,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     name="district"
                     value={formData.district}
                     onChange={handleChange}
-                    placeholder="Gurugram"
+                    placeholder="e.g. Gurugram"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545]"
                   />
                 </div>
@@ -376,7 +386,7 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                     name="pincode"
                     value={formData.pincode}
                     onChange={handleChange}
-                    placeholder="122051"
+                    placeholder="e.g. 122051"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b2545]"
                   />
                 </div>
@@ -387,7 +397,11 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
                   <span className="text-base">🏢</span>
                   <div>
                     <span className="font-bold">Jurisdiction Branch Office: </span>
-                    <span>Northern Regional Office (NRO) / Faridabad Branch Office</span>
+                    <span>
+                      {formData.state
+                        ? `${formData.state} Regional Office / Branch Office`
+                        : 'Will be auto-assigned based on State & PIN Code'}
+                    </span>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
