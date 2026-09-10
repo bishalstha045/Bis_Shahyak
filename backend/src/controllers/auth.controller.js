@@ -42,6 +42,16 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const demoAdmin = async (req, res, next) => {
+  try {
+    const result = authService.getDemoAdminSession();
+    return res.status(200).json(result);
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+
+
 export const me = async (req, res, next) => {
   try {
     return sendSuccess(res, { user: req.user }, "Current user profile fetched");

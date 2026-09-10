@@ -9,7 +9,7 @@ export class UserService {
     }
     return {
       id: userId,
-      email: 'demo@msme.gov.in',
+      email: 'demo.manufacturer@example.com',
       full_name: 'Anil Sharma',
       company_name: 'Alpha Stainless Works Ltd.',
       role: 'Manufacturer',

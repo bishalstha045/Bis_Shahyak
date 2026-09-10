@@ -44,6 +44,27 @@ const userSchema = new mongoose.Schema({
   is_active: {
     type: Boolean,
     default: true
+  },
+  is_admin: {
+    type: Boolean,
+    default: false
+  },
+  status: {
+    type: String,
+    enum: ['active', 'suspended', 'deleted'],
+    default: 'active'
+  },
+  is_deleted: {
+    type: Boolean,
+    default: false
+  },
+  deleted_at: {
+    type: Date,
+    default: null
+  },
+  last_login: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

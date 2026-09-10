@@ -11,6 +11,7 @@ import documentRoutes from './routes/document.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import ragRoutes from './routes/rag.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 import { healthCheck } from './controllers/rag.controller.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
@@ -56,7 +57,9 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/document', documentRoutes); // Alias for /api/document/analyze
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api', ragRoutes); // Product mapping, compliance, verifier, pdf export
+
 
 // 404 & Error Handling
 app.use(notFoundHandler);
