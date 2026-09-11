@@ -182,12 +182,31 @@ export class AdminService {
     return entry;
   }
 
+  // Helper to ensure all registered non-admin users have a verification dossier
+  async syncMissingUserVerifications() {
+    if (!isDbConnected()) return;
+    try {
+      const nonAdminUsers = await User.find({
+        is_admin: { $ne: true },
+        role: { $nin: ['admin', 'administrator', 'officer', 'director'] },
+        is_deleted: { $ne: true }
+      });
+      for (const u of nonAdminUsers) {
+        await this.createOrUpdateOrgVerification(u);
+      }
+    } catch (e) {
+      console.warn("Sync missing verifications note:", e.message);
+    }
+  }
+
   // 1. Dashboard Metrics
   async getDashboardStats() {
     await this.ensureMongoSeeded();
     if (!isDbConnected()) {
       throw new Error("Database service temporarily unavailable.");
     }
+
+    await this.syncMissingUserVerifications();
 
     const [totalUsers, activeUsers, pendingVerification, verified, rejected, reports, recentActivities] = await Promise.all([
       User.countDocuments({ is_deleted: { $ne: true } }),
@@ -223,18 +242,19 @@ export class AdminService {
     if (!isDbConnected() || !user || !user.email) return null;
 
     const role = (user.role || '').toLowerCase();
-    if (user.is_admin === true || role === 'admin' || role === 'administrator') {
+    if (user.is_admin === true || role === 'admin' || role === 'administrator' || role === 'officer' || role === 'director') {
       return null;
     }
 
-    const companyName = (user.company_name || '').trim();
-    if (!companyName || companyName === 'Independent Enterprise') {
-      return null;
-    }
+    const rawCompany = (user.company_name || '').trim();
+    const companyName = (rawCompany && rawCompany !== 'Independent Enterprise')
+      ? rawCompany
+      : `${user.full_name || user.email.split('@')[0]}'s Enterprise`;
+
     const sector = user.sector || 'Consumer Goods & Utensils';
     const enterpriseCategory = user.enterprise_category || 'MSME - Small Enterprise';
     const gstin = user.gstin || '';
-    const phone = user.phone || '+91 98765 43210';
+    const phone = user.phone || user.mobile_number || '+91 98765 43210';
     const udyamNumber = user.udyam_number || (gstin ? `UDYAM-DL-01-${gstin.slice(2, 9)}` : 'UDYAM-REG-PENDING');
 
     // Select suitable standard according to industry sector
@@ -355,6 +375,8 @@ export class AdminService {
     if (!isDbConnected()) {
       throw new Error("Database service temporarily unavailable.");
     }
+
+    await this.syncMissingUserVerifications();
 
     const query = {};
     if (status && status !== 'ALL') {

@@ -193,6 +193,23 @@ export default function AuthView({ initialMode = 'login', auth, onClose, onAuthS
       return;
     }
 
+    // Proactively dispatch organization verification dossier to Admin Panel
+    try {
+      fetch('/api/auth/submit-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          full_name: fullName.trim() || 'Enterprise Representative',
+          company_name: companyName.trim(),
+          phone: mobileNumber.trim(),
+          role: `${enterpriseCategory} (${sector})`,
+          enterprise_category: enterpriseCategory,
+          sector: sector
+        })
+      }).catch(() => {});
+    } catch (e) {}
+
     // If in Google Onboarding mode
     if (mode === 'org_onboarding') {
       try {

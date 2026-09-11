@@ -105,3 +105,26 @@ export const getAssessments = async (req, res, next) => {
     return sendError(res, err.message, status);
   }
 };
+
+export const submitOrgVerification = async (req, res, next) => {
+  try {
+    const { email, full_name, company_name, role, phone, sector, enterprise_category, gstin } = req.body;
+    if (!email) {
+      return sendError(res, "Email is required to submit organization verification.", 400);
+    }
+    const result = await authService.submitOrgVerification({
+      email,
+      full_name,
+      company_name,
+      role,
+      phone,
+      sector,
+      enterprise_category,
+      gstin
+    });
+    return res.status(200).json(result);
+  } catch (err) {
+    const status = err.message.includes("unavailable") ? 503 : 400;
+    return sendError(res, err.message, status);
+  }
+};

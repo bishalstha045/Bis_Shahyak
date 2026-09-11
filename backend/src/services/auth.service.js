@@ -17,17 +17,42 @@ export class AuthService {
 
     const cleanEmail = email.toLowerCase().trim();
     const hashedPassword = await hashPassword(password);
+    const userCompany = (company_name || '').trim() || `${full_name.trim()}'s Enterprise`;
 
     const existing = await User.findOne({ email: cleanEmail });
     if (existing) {
-      throw new Error("An account with this email address already exists.");
+      // Gracefully update existing user with organization details and ensure verification dossier is created
+      existing.full_name = full_name.trim() || existing.full_name;
+      existing.company_name = userCompany || existing.company_name;
+      if (role) existing.role = role;
+      if (phone) existing.phone = phone;
+      if (sector) existing.sector = sector;
+      if (enterprise_category) existing.enterprise_category = enterprise_category;
+      if (gstin) existing.gstin = gstin;
+      existing.last_login = new Date();
+      await existing.save();
+
+      try {
+        await adminService.createOrUpdateOrgVerification(existing);
+      } catch (vErr) {
+        console.warn("Auto verification queue note on register update:", vErr.message);
+      }
+
+      const tokenPayload = {
+        id: existing._id.toString(),
+        email: existing.email,
+        role: existing.role,
+        is_admin: existing.is_admin
+      };
+      const access_token = signToken(tokenPayload);
+      return { access_token, user: existing };
     }
 
     const userRecord = await User.create({
       email: cleanEmail,
       password: hashedPassword,
       full_name: full_name.trim(),
-      company_name: company_name || 'Independent Enterprise',
+      company_name: userCompany,
       role: role || 'Manufacturer',
       phone: phone || '',
       sector: sector || 'Consumer Goods & Utensils',
@@ -107,6 +132,15 @@ export class AuthService {
 
     const role = (user.role || '').toLowerCase();
     const isAdmin = user.is_admin === true || role === 'admin' || role === 'administrator' || role === 'officer' || role === 'director';
+
+    // Automatically ensure verification dossier is queued for non-admin user
+    if (!isAdmin) {
+      try {
+        await adminService.createOrUpdateOrgVerification(user);
+      } catch (vErr) {
+        console.warn("Auto verification queue note on login:", vErr.message);
+      }
+    }
 
     const access_token = signToken({
       id: user._id.toString(),
@@ -211,17 +245,17 @@ export class AuthService {
       await user.save();
     }
 
-    // Automatically queue organization verification application in Admin Panel if company registered
-    if (user.company_name && user.company_name.trim() !== '' && user.company_name !== 'Independent Enterprise') {
+    // Automatically queue organization verification application in Admin Panel
+    const role = (user.role || '').toLowerCase();
+    const isAdmin = user.is_admin === true || role === 'admin' || role === 'administrator' || role === 'officer' || role === 'director';
+
+    if (!isAdmin) {
       try {
         await adminService.createOrUpdateOrgVerification(user);
       } catch (vErr) {
         console.warn("Auto verification queue note on sync:", vErr.message);
       }
     }
-
-    const role = (user.role || '').toLowerCase();
-    const isAdmin = user.is_admin === true || role === 'admin' || role === 'administrator' || role === 'officer' || role === 'director';
 
     const access_token = signToken({
       id: user._id.toString(),
@@ -320,8 +354,58 @@ export class AuthService {
     if (!isDbConnected()) {
       throw new Error("Authentication service temporarily unavailable.");
     }
-
     return await Assessment.find({ user_id: userId }).sort({ createdAt: -1 });
+  }
+
+  /**
+   * Directly submit or update organization details and queue for Admin Verification.
+   * Can be called during signup, onboarding, or profile updates.
+   */
+  async submitOrgVerification({ email, full_name, company_name, role, phone, sector, enterprise_category, gstin }) {
+    if (!isDbConnected()) {
+      throw new Error("Authentication service temporarily unavailable.");
+    }
+
+    const cleanEmail = (email || '').toLowerCase().trim();
+    if (!cleanEmail) throw new Error("Valid email address is required.");
+
+    let user = await User.findOne({ email: cleanEmail });
+    const userCompany = (company_name || '').trim() || `${(full_name || cleanEmail.split('@')[0]).trim()}'s Enterprise`;
+
+    if (!user) {
+      user = await User.create({
+        email: cleanEmail,
+        full_name: (full_name || cleanEmail.split('@')[0]).trim(),
+        company_name: userCompany,
+        role: role || 'Manufacturer',
+        phone: phone || '',
+        sector: sector || 'Consumer Goods & Utensils',
+        enterprise_category: enterprise_category || 'MSME - Small Enterprise',
+        gstin: gstin || '',
+        provider: 'supabase',
+        status: 'active',
+        is_active: true,
+        is_admin: false,
+        last_login: new Date()
+      });
+    } else {
+      if (full_name && full_name.trim()) user.full_name = full_name.trim();
+      if (company_name && company_name.trim() && company_name !== 'Independent Enterprise') {
+        user.company_name = company_name.trim();
+      } else if (!user.company_name) {
+        user.company_name = userCompany;
+      }
+      if (role) user.role = role;
+      if (phone) user.phone = phone;
+      if (sector) user.sector = sector;
+      if (enterprise_category) user.enterprise_category = enterprise_category;
+      if (gstin) user.gstin = gstin;
+      user.last_login = new Date();
+      await user.save();
+    }
+
+    const submission = await adminService.createOrUpdateOrgVerification(user);
+    return { success: true, user, submission };
   }
 }
 

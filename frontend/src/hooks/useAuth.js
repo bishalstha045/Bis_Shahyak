@@ -431,8 +431,27 @@ export function useAuth() {
         password
       });
 
-
       if (error) {
+        // Fallback: check if user is registered and valid in MongoDB backend
+        try {
+          const backendRes = await fetch(`${API_BASE}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail, password })
+          });
+          const bData = await backendRes.json();
+          if (backendRes.ok && bData.user) {
+            setUser(bData.user);
+            setToken(bData.access_token);
+            setAuthState(AUTH_STATES.AUTHENTICATED);
+            localStorage.setItem('bis_user', JSON.stringify(bData.user));
+            localStorage.setItem('bis_token', bData.access_token);
+            localStorage.removeItem('bis_pending_verification');
+            setPendingVerification(null);
+            return bData.user;
+          }
+        } catch (bErr) {}
+
         throw new Error(formatAuthError(error));
       }
 
@@ -440,6 +459,26 @@ export function useAuth() {
       const isVerified = Boolean(authUser.email_confirmed_at);
 
       if (!isVerified) {
+        // If unconfirmed in Supabase, verify if local backend account can proceed
+        try {
+          const backendRes = await fetch(`${API_BASE}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail, password })
+          });
+          const bData = await backendRes.json();
+          if (backendRes.ok && bData.user) {
+            setUser(bData.user);
+            setToken(bData.access_token);
+            setAuthState(AUTH_STATES.AUTHENTICATED);
+            localStorage.setItem('bis_user', JSON.stringify(bData.user));
+            localStorage.setItem('bis_token', bData.access_token);
+            localStorage.removeItem('bis_pending_verification');
+            setPendingVerification(null);
+            return bData.user;
+          }
+        } catch (bErr) {}
+
         // Stop unverified user from accessing application
         setAuthState(AUTH_STATES.EMAIL_VERIFICATION_PENDING);
         const pending = {
@@ -493,11 +532,13 @@ export function useAuth() {
     try {
       const trimmedEmail = email.trim();
       const trimmedName = full_name?.trim() || '';
-      const trimmedCompany = company_name?.trim() || 'Registered Enterprise';
+      const trimmedCompany = company_name?.trim() || `${trimmedName || 'Registered'}'s Enterprise`;
+      const entCategory = enterprise_category || 'MSME - Small Enterprise';
+      const secCategory = sector || 'Consumer Goods & Utensils (IS 17803)';
 
-      // 1. Immediately register in MongoDB so user and organization appear in Admin Verification queue
+      // 1. Immediately register & queue organization in Admin Verification
       try {
-        await fetch(`${API_BASE}/api/auth/register`, {
+        await fetch(`${API_BASE}/api/auth/submit-verification`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -505,14 +546,14 @@ export function useAuth() {
             password,
             full_name: trimmedName,
             company_name: trimmedCompany,
-            role: role || `${enterprise_category || 'MSME'} (${sector || 'General'})`,
+            role: role || `${entCategory} (${secCategory})`,
             phone: mobile_number?.trim() || '',
-            enterprise_category: enterprise_category || 'MSME - Small Enterprise',
-            sector: sector || 'Consumer Goods & Utensils'
+            enterprise_category: entCategory,
+            sector: secCategory
           })
         });
       } catch (backendErr) {
-        console.warn("Backend registration sync notice:", backendErr.message);
+        console.warn("Backend submit-verification notice:", backendErr.message);
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -524,8 +565,8 @@ export function useAuth() {
             company_name: trimmedCompany,
             role: role || 'Manufacturer',
             mobile_number: mobile_number?.trim() || '',
-            enterprise_category: enterprise_category || 'MSME - Small Enterprise',
-            sector: sector || 'Consumer Goods & Utensils (IS 17803)',
+            enterprise_category: entCategory,
+            sector: secCategory,
             has_organization: true
           }
         }
@@ -548,8 +589,8 @@ export function useAuth() {
         fullName: trimmedName,
         companyName: trimmedCompany,
         mobileNumber: mobile_number?.trim() || '',
-        enterpriseCategory: enterprise_category || 'MSME - Small Enterprise',
-        sector: sector || 'Consumer Goods & Utensils (IS 17803)'
+        enterpriseCategory: entCategory,
+        sector: secCategory
       };
 
       if (!isAutoVerified) {
@@ -564,18 +605,18 @@ export function useAuth() {
       const userObj = formatSupabaseUser(authUser);
       await saveProfileAndOrgToDatabase(userObj, {
         company_name: trimmedCompany,
-        enterprise_category,
-        sector
+        enterprise_category: entCategory,
+        sector: secCategory
       });
 
       const backendSync = await syncWithBackend(data.session, {
         email: trimmedEmail,
         full_name: trimmedName,
         company_name: trimmedCompany,
-        role: `${enterpriseCategory} (${sector})`,
+        role: `${entCategory} (${secCategory})`,
         phone: mobile_number?.trim() || '',
-        sector: sector,
-        enterprise_category: enterpriseCategory
+        sector: secCategory,
+        enterprise_category: entCategory
       });
 
       const finalUser = backendSync?.user || userObj;
@@ -702,6 +743,23 @@ export function useAuth() {
         enterprise_category,
         sector
       });
+
+      // Submit verification dossier directly to admin panel
+      try {
+        await fetch(`${API_BASE}/api/auth/submit-verification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: updatedUserObj.email,
+            full_name: updatedUserObj.full_name,
+            company_name: company_name.trim(),
+            role: updatedUserObj.role,
+            phone: updatedUserObj.phone,
+            sector: sector,
+            enterprise_category: enterprise_category
+          })
+        });
+      } catch (e) {}
 
       const { data: { session } } = await supabase.auth.getSession();
       const backendSync = await syncWithBackend(session, {
