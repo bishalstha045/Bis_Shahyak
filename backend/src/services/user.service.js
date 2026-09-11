@@ -1,28 +1,29 @@
 import { User } from '../models/User.js';
 import { isDbConnected } from '../config/db.js';
+import { adminService } from './admin.service.js';
 
 export class UserService {
   async getProfile(userId) {
-    if (isDbConnected()) {
-      const user = await User.findById(userId);
-      return user ? user.toJSON() : null;
+    if (!isDbConnected()) {
+      throw new Error("Service temporarily unavailable.");
     }
-    return {
-      id: userId,
-      email: 'demo.manufacturer@example.com',
-      full_name: 'Anil Sharma',
-      company_name: 'Alpha Stainless Works Ltd.',
-      role: 'Manufacturer',
-      sector: 'Consumer Goods & Utensils (IS 17803)'
-    };
+    const user = await User.findById(userId);
+    return user ? user.toJSON() : null;
   }
 
   async updateProfile(userId, updateData) {
-    if (isDbConnected()) {
-      const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
-      return user ? user.toJSON() : null;
+    if (!isDbConnected()) {
+      throw new Error("Service temporarily unavailable.");
     }
-    return { id: userId, ...updateData };
+    const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
+    if (user && (updateData.company_name || updateData.sector || updateData.enterprise_category || updateData.gstin)) {
+      try {
+        await adminService.createOrUpdateOrgVerification(user);
+      } catch (vErr) {
+        console.warn("Auto verification queue note on profile update:", vErr.message);
+      }
+    }
+    return user ? user.toJSON() : null;
   }
 }
 

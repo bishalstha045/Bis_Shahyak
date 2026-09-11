@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['qco', 'amendments', 'impact', 'labs', 'training', 'general'],
+    enum: ['qco', 'amendments', 'impact', 'labs', 'training', 'verification', 'licence', 'compliance', 'general'],
     default: 'general'
   },
   badge: {

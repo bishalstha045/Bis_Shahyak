@@ -117,6 +117,26 @@ const verificationSubmissionSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  first_approver: {
+    type: String,
+    default: null
+  },
+  first_approved_at: {
+    type: Date,
+    default: null
+  },
+  second_approver: {
+    type: String,
+    default: null
+  },
+  second_approved_at: {
+    type: Date,
+    default: null
+  },
+  dual_signoff_required: {
+    type: Boolean,
+    default: false
+  },
   submitted_at: {
     type: Date,
     default: Date.now

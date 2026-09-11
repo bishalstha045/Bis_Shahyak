@@ -16,6 +16,10 @@ const documentSchema = new mongoose.Schema({
   file_path: {
     type: String
   },
+  file_data: {
+    type: String,
+    default: null
+  },
   mime_type: {
     type: String
   },

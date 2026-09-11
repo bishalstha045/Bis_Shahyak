@@ -6,8 +6,8 @@ export default function AdminAuthGate({
   onExitToManufacturer,
   onAdminAuthenticated
 }) {
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [emailInput, setEmailInput] = useState('admin@admin.com');
+  const [passwordInput, setPasswordInput] = useState('Admin@123');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState(null);
 
@@ -20,14 +20,14 @@ export default function AdminAuthGate({
     setLocalError(null);
 
     try {
-      const user = await auth.login(emailInput, passwordInput);
-      if (user && (user.is_admin || user.role === 'admin')) {
+      const user = await auth.login(emailInput || 'admin@admin.com', passwordInput || 'Admin@123');
+      if (user && (user.is_admin || user.role === 'admin' || user.role === 'officer' || user.role === 'director')) {
         if (onAdminAuthenticated) onAdminAuthenticated(user);
-      } else {
-        setLocalError("The provided account does not have administrative privileges.");
+        return;
       }
+      setLocalError("Access Denied: Administrative privileges required.");
     } catch (err) {
-      setLocalError(err.message || "Failed to authenticate administrator.");
+      setLocalError(err.message || "Invalid officer email or password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -40,7 +40,7 @@ export default function AdminAuthGate({
       const user = await auth.adminDemoLogin();
       if (onAdminAuthenticated) onAdminAuthenticated(user);
     } catch (err) {
-      setLocalError(err.message || "Failed to load admin demo session.");
+      setLocalError("Failed to load admin session.");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,10 +66,10 @@ export default function AdminAuthGate({
 
           <div className="p-4 rounded-2xl bg-[#090e1c] border border-slate-800 space-y-3 text-xs text-slate-300">
             <p>
-              Your currently signed-in enterprise account (<span className="font-mono text-amber-400">{currentUser.email}</span>) does not possess statutory administrative rights.
+              Your currently signed-in enterprise account (<span className="font-mono text-amber-400">{currentUser.email || currentUser.full_name}</span>) is a manufacturer profile.
             </p>
             <p className="text-slate-400">
-              To inspect regulatory dashboards, you must sign in with an officer identity or access via the developer sandbox gateway below.
+              Click below to switch immediately to the <strong>Statutory Regulatory Directorate</strong> session.
             </p>
           </div>
 
@@ -90,7 +90,7 @@ export default function AdminAuthGate({
               className="w-full sm:w-1/2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 disabled:opacity-50 cursor-pointer"
             >
               <UserCheck size={14} />
-              <span>Sandbox Access</span>
+              <span>Switch to Officer Session</span>
             </button>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function AdminAuthGate({
   // Case 2: Unauthenticated / Sign-in required
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 flex items-center justify-center p-4 sm:p-6 font-sans">
-      <div className="w-full max-w-md bg-[#0d1424] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 animate-fade-in relative overflow-hidden">
+      <div className="w-full max-w-md bg-[#0d1424] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 animate-fade-in relative overflow-hidden">
         {/* Ambient Top Glow */}
         <div className="absolute -top-20 -right-20 w-60 h-60 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -121,6 +121,29 @@ export default function AdminAuthGate({
           </div>
         </div>
 
+        {/* Pre-configured Credentials Info Banner */}
+        <div className="p-3 rounded-2xl bg-blue-950/50 border border-blue-800/60 text-xs space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-blue-300 flex items-center gap-1.5 text-[11px]">
+              <ShieldCheck size={13} className="text-blue-400" />
+              <span>Officer Evaluation Credentials</span>
+            </span>
+            <span className="text-[10px] font-mono bg-blue-900/80 text-blue-200 px-1.5 py-0.5 rounded border border-blue-700/60">
+              DIRECTORATE
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-[#080d19] p-2 rounded-xl border border-slate-800">
+            <div>
+              <span className="text-slate-500 text-[10px] block">Officer ID:</span>
+              <span className="text-slate-200 font-semibold text-[10px] truncate block">admin@admin.com</span>
+            </div>
+            <div>
+              <span className="text-slate-500 text-[10px] block">Passcode:</span>
+              <span className="text-amber-400 font-semibold text-[10px] block">Admin@123</span>
+            </div>
+          </div>
+        </div>
+
         {/* Error Alert */}
         {localError && (
           <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2 animate-fade-in">
@@ -130,26 +153,26 @@ export default function AdminAuthGate({
         )}
 
         {/* Sign In Form */}
-        <form onSubmit={handleAdminSignIn} className="space-y-4 text-xs">
-          <div className="space-y-1.5">
+        <form onSubmit={handleAdminSignIn} className="space-y-3.5 text-xs">
+          <div className="space-y-1">
             <label className="block font-bold text-slate-300">Official Officer ID / Email</label>
             <input
               type="email"
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="e.g. director.conformity@agency.internal"
+              placeholder="admin@admin.com"
               required
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#090e1c] border border-slate-700 text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className="block font-bold text-slate-300">Secret Directorate Passcode</label>
             <input
               type="password"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder="••••••••••••"
+              placeholder="Admin@123"
               required
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#090e1c] border border-slate-700 text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
@@ -166,11 +189,11 @@ export default function AdminAuthGate({
         </form>
 
         {/* Quick Demo Access Bar */}
-        <div className="pt-2 border-t border-slate-800/80 space-y-2.5">
+        <div className="pt-2 border-t border-slate-800/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Evaluation & Judge Access</span>
             <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-              <CheckCircle2 size={11} /> Pre-configured
+              <CheckCircle2 size={11} /> 1-Click Ready
             </span>
           </div>
 

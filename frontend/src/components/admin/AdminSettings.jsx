@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Shield, Server, Lock, CheckCircle2, Save, RefreshCw } from 'lucide-react';
-import { getAdminSettings } from '../../services/api';
+import { Settings, Shield, Server, Lock, CheckCircle2, Save, RefreshCw, AlertCircle } from 'lucide-react';
+import { getAdminSettings, saveAdminSettings } from '../../services/api';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState({
@@ -13,17 +13,35 @@ export default function AdminSettings() {
     log_retention_days: 90
   });
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getAdminSettings().then(data => {
-      if (data) setSettings(prev => ({ ...prev, ...data }));
+      if (data) {
+        setSettings(prev => ({ ...prev, ...data }));
+        if (data.last_saved_at) {
+          setLastSavedTime(new Date(data.last_saved_at).toLocaleTimeString());
+        }
+      }
     }).catch(() => {});
   }, []);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await saveAdminSettings(settings);
+      setSaved(true);
+      setLastSavedTime(new Date().toLocaleTimeString());
+      setTimeout(() => setSaved(false), 4000);
+    } catch (err) {
+      setError(err.message || "Failed to persist settings");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -38,11 +56,23 @@ export default function AdminSettings() {
           </p>
         </div>
 
-        {saved && (
-          <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 animate-fade-in">
-            <CheckCircle2 size={14} /> Settings Saved
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {lastSavedTime && (
+            <span className="text-[11px] text-slate-500 hidden sm:inline">
+              Database Sync: {lastSavedTime}
+            </span>
+          )}
+          {saved && (
+            <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 animate-fade-in">
+              <CheckCircle2 size={14} /> Settings Saved & Persisted
+            </span>
+          )}
+          {error && (
+            <span className="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5">
+              <AlertCircle size={14} /> {error}
+            </span>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6 text-xs">
@@ -122,13 +152,14 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-4">
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors flex items-center gap-2 shadow-md cursor-pointer"
+            disabled={saving}
+            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold transition-colors flex items-center gap-2 shadow-md cursor-pointer"
           >
-            <Save size={15} />
-            <span>Save Settings</span>
+            {saving ? <RefreshCw size={15} className="animate-spin" /> : <Save size={15} />}
+            <span>{saving ? "Saving to Database..." : "Save Settings"}</span>
           </button>
         </div>
       </form>

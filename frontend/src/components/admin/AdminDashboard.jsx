@@ -72,23 +72,25 @@ export default function AdminDashboard({ onNavigate }) {
     {
       id: 'total_users',
       label: 'Total Users',
-      value: stats?.total_users ?? 0,
+      value: stats?.total_users ?? stats?.totalUsers ?? stats?.total_submissions ?? 0,
       icon: <Users size={20} />,
       color: 'from-blue-600/20 to-blue-900/10 text-blue-400 border-blue-500/30',
-      desc: 'Registered manufacturers & citizens'
+      desc: 'Registered manufacturers & citizens',
+      onClick: () => onNavigate && onNavigate('users')
     },
     {
       id: 'active_users',
       label: 'Active Users',
-      value: stats?.active_users ?? 0,
+      value: stats?.active_users ?? stats?.activeUsers ?? stats?.active_manufacturers ?? 0,
       icon: <TrendingUp size={20} />,
       color: 'from-cyan-600/20 to-cyan-900/10 text-cyan-400 border-cyan-500/30',
-      desc: 'Active compliant enterprises'
+      desc: 'Active compliant enterprises',
+      onClick: () => onNavigate && onNavigate('users')
     },
     {
       id: 'pending_verification',
       label: 'Pending Verification',
-      value: stats?.pending_verification ?? 0,
+      value: stats?.pending_verification ?? stats?.pending_verifications ?? 0,
       icon: <Clock size={20} />,
       color: 'from-amber-600/20 to-amber-900/10 text-amber-400 border-amber-500/30',
       desc: 'Dossiers awaiting officer audit',
@@ -97,23 +99,25 @@ export default function AdminDashboard({ onNavigate }) {
     {
       id: 'verified',
       label: 'Verified',
-      value: stats?.verified ?? 0,
+      value: stats?.verified ?? stats?.approved_licenses ?? 0,
       icon: <CheckCircle2 size={20} />,
       color: 'from-emerald-600/20 to-emerald-900/10 text-emerald-400 border-emerald-500/30',
-      desc: 'ISI Licences granted'
+      desc: 'ISI Licences granted',
+      onClick: () => onNavigate && onNavigate('verification')
     },
     {
       id: 'rejected',
       label: 'Rejected',
-      value: stats?.rejected ?? 0,
+      value: stats?.rejected ?? stats?.rejected_applications ?? 0,
       icon: <XCircle size={20} />,
       color: 'from-rose-600/20 to-rose-900/10 text-rose-400 border-rose-500/30',
-      desc: 'Non-compliant submissions'
+      desc: 'Non-compliant submissions',
+      onClick: () => onNavigate && onNavigate('verification')
     },
     {
       id: 'reports',
       label: 'Reports',
-      value: stats?.reports ?? 0,
+      value: stats?.reports ?? stats?.unresolved_reports ?? 0,
       icon: <FileText size={20} />,
       color: 'from-purple-600/20 to-purple-900/10 text-purple-400 border-purple-500/30',
       desc: 'Open grievances & violations',

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Bell, AlertTriangle, FileText, Building2, CheckCircle2, Filter, Sparkles, ExternalLink, ArrowRight, Check, X, ShieldAlert, BookOpen, Upload, Calendar, Settings, FileCheck, Layers, Beaker, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, AlertTriangle, FileText, Building2, CheckCircle2, Filter, Sparkles, ExternalLink, ArrowRight, Check, X, ShieldAlert, BookOpen, Upload, Calendar, Settings, FileCheck, Layers, Beaker, Users, Award, ShieldCheck, XCircle, RefreshCw, Stamp } from 'lucide-react';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/api';
 
 export default function NotificationsView({
   onNavigate,
@@ -7,107 +8,40 @@ export default function NotificationsView({
   onAskAIAboutStandard,
   onOpenEvidence
 }) {
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'qco' | 'amendments' | 'impact' | 'labs'
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'verification' | 'qco' | 'amendments' | 'impact' | 'labs'
   const [unreadOnly, setUnreadOnly] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'notif-1',
-      type: 'qco',
-      badge: 'MANDATORY QCO ORDER',
-      badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
-      title: 'Quality Control Order Enforcement: IS 17803:2022 (Stainless Steel Water Bottles)',
-      authority: 'Ministry of Commerce & Industry (DPIIT) • Gazette S.O. 4521(E)',
-      date: '28 Aug 2026',
-      unread: true,
-      nodeColor: 'bg-rose-500',
-      lineColor: 'border-rose-200',
-      iconBg: 'bg-rose-50 text-rose-600 border-rose-200',
-      icon: <FileText size={18} />,
-      impact: 'High Impact on Registered Product',
-      description: 'Mandatory BIS ISI certification deadline has been confirmed for 15 October 2026. Production, stocking, or sale of non-ISI marked stainless steel bottles is prohibited under Section 16 of the BIS Act 2016.',
-      actionPrimary: { label: 'Check Readiness (68%) →', target: 'compliance' },
-      actionSecondary: { label: 'Ask AI About Grace Period', query: 'What is the grace period and penalty for non-compliance under IS 17803:2022 QCO?' }
-    },
-    {
-      id: 'notif-2',
-      type: 'amendments',
-      badge: 'TECHNICAL AMENDMENT',
-      badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
-      title: 'Amendment No. 1 to IS 17803:2022 Published by MED-18',
-      authority: 'Bureau of Indian Standards • Mechanical Engineering Department',
-      date: '21 Aug 2026',
-      unread: true,
-      nodeColor: 'bg-blue-500',
-      lineColor: 'border-blue-200',
-      iconBg: 'bg-blue-50 text-blue-600 border-blue-200',
-      icon: <FileCheck size={18} />,
-      impact: 'Direct Requirement Change',
-      description: 'Clause 5.2.1 migration test limits for heavy metals (Lead & Cadmium) have been updated to align with global food-contact safety standards (ISO 8124). Testing protocols for caps and seals have been refined.',
-      actionPrimary: { label: 'Compare Standard Diff →', target: 'compare' },
-      actionSecondary: { label: 'Ask AI Details', query: 'Explain the changes in Amendment No. 1 of IS 17803:2022 and how it affects manufacturer testing.' }
-    },
-    {
-      id: 'notif-3',
-      type: 'impact',
-      badge: 'ASSESSMENT GAP ALERT',
-      badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
-      title: 'Missing Evidence for Clause 5.2.1 Safety Performance Test',
-      authority: 'BIS Sahayak Compliance Engine',
-      date: '20 Aug 2026',
-      unread: true,
-      nodeColor: 'bg-amber-500',
-      lineColor: 'border-amber-200',
-      iconBg: 'bg-amber-50 text-amber-600 border-amber-200',
-      icon: <Beaker size={18} />,
-      impact: 'Action Required',
-      description: 'Your registered product "Stainless Steel Water Bottle" currently lacks an uploaded test report from a BIS-recognized NABL laboratory. Uploading this evidence will elevate your compliance readiness score from 68% to 88%.',
-      actionPrimary: { label: 'Upload Test Report →', target: 'documents' },
-      actionSecondary: { label: 'View Checklist', target: 'compliance' }
-    },
-    {
-      id: 'notif-4',
-      type: 'labs',
-      badge: 'LAB INFRASTRUCTURE',
-      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      title: '4 New BIS-Recognized Testing Laboratories Empaneled',
-      authority: 'BIS Central Marks Department (CMD-III)',
-      date: '15 Aug 2026',
-      unread: false,
-      nodeColor: 'bg-emerald-500',
-      lineColor: 'border-emerald-200',
-      iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-      icon: <Building2 size={18} />,
-      impact: 'Faster Testing Turnaround',
-      description: 'Accredited NABL test facilities in Manesar, Bengaluru, Pune, and Ahmedabad have been approved for rapid turnaround sample testing for electrical appliances (IS 302-1) and consumer containers (IS 17803).',
-      actionPrimary: { label: 'Ask AI for Lab Directory →', query: 'List BIS-recognized laboratories for testing stainless steel bottles and electrical appliances near Delhi NCR and Maharashtra.' },
-      actionSecondary: null
-    },
-    {
-      id: 'notif-5',
-      type: 'training',
-      badge: 'MSME CAPACITY BUILDING',
-      badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
-      title: 'National Virtual Workshop on BIS Conformity Assessment Scheme-I',
-      authority: 'National Institute of Training for Standardization (NITS)',
-      date: '10 Aug 2026',
-      unread: false,
-      nodeColor: 'bg-purple-500',
-      lineColor: 'border-purple-200',
-      iconBg: 'bg-purple-50 text-purple-600 border-purple-200',
-      icon: <Users size={18} />,
-      impact: 'Capacity Building & Subsidies',
-      description: 'Free interactive session for MSME manufacturers explaining Scheme of Inspection and Testing (STI), ManakOnline portal filing, and government testing fee concessions (up to 50% for Micro & Women enterprises).',
-      actionPrimary: { label: 'Ask AI About MSME Concessions →', query: 'What are the BIS fee concessions and subsidies available for MSMEs under the ManakOnline scheme?' },
-      actionSecondary: null
-    }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const markAllAsRead = () => {
+  const fetchLiveNotifications = async () => {
+    try {
+      const data = await getNotifications();
+      if (Array.isArray(data)) {
+        setNotifications(data);
+      }
+    } catch (e) {
+      console.warn("Failed to load notifications:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveNotifications();
+    const interval = setInterval(fetchLiveNotifications, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkAllAsRead = async () => {
+    await markAllNotificationsAsRead();
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
   };
 
-  const toggleRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: !n.unread } : n));
+  const handleToggleRead = async (id, currentUnread) => {
+    if (currentUnread) {
+      await markNotificationAsRead(id);
+      setNotifications(prev => prev.map(n => (n.id === id || n._id === id) ? { ...n, unread: false } : n));
+    }
   };
 
   const unreadCount = notifications.filter(n => n.unread).length;
@@ -115,6 +49,7 @@ export default function NotificationsView({
   const filteredNotifications = notifications.filter(n => {
     if (unreadOnly && !n.unread) return false;
     if (activeFilter === 'all') return true;
+    if (activeFilter === 'verification') return n.type === 'verification' || n.type === 'licence';
     if (activeFilter === 'qco') return n.type === 'qco';
     if (activeFilter === 'amendments') return n.type === 'amendments';
     if (activeFilter === 'impact') return n.type === 'impact';
@@ -183,6 +118,7 @@ export default function NotificationsView({
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             {[
               { id: 'all', label: 'All Notifications', icon: '💼' },
+              { id: 'verification', label: 'Verifications & Licences', icon: '🏛️' },
               { id: 'qco', label: 'QCO Mandates', icon: '📑' },
               { id: 'amendments', label: 'Amendments', icon: '📄' },
               { id: 'impact', label: 'My Product Impact', icon: '⚠️' },
@@ -219,87 +155,201 @@ export default function NotificationsView({
         {/* 3. TIMELINE NOTIFICATIONS FEED                                            */}
         {/* ========================================================================= */}
         <div className="space-y-4">
-          {filteredNotifications.length > 0 ? (
-            filteredNotifications.map((notif) => (
-              <div key={notif.id} className="relative pl-6 sm:pl-8 group">
-                
-                {/* Vertical Timeline Line & Node */}
-                <div className={`absolute left-2.5 top-0 bottom-0 w-0.5 ${notif.lineColor} group-last:bottom-1/2`}></div>
-                <div className={`absolute left-1.5 top-6 w-2.5 h-2.5 rounded-full ${notif.nodeColor} ring-4 ring-white shadow-2xs`}></div>
+          {loading ? (
+            <div className="py-16 text-center space-y-3 bg-white rounded-3xl border border-slate-200">
+              <RefreshCw size={24} className="text-blue-600 animate-spin mx-auto" />
+              <p className="text-xs font-bold text-slate-500">Loading statutory updates...</p>
+            </div>
+          ) : filteredNotifications.length > 0 ? (
+            filteredNotifications.map((notif) => {
+              const isVerificationApproved = notif.badge === 'VERIFICATION APPROVED' || notif.type === 'licence';
+              const isVerificationRejected = notif.badge === 'VERIFICATION REJECTED';
 
-                {/* Main Notification Card */}
-                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-3.5 hover:border-slate-300 transition-all">
-                  
-                  {/* Top Bar: Icon + Badge + Authority + Date & Dot */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-2xl border ${notif.iconBg} flex items-center justify-center shrink-0 shadow-2xs mt-0.5`}>
-                        {notif.icon}
-                      </div>
+              const icon = isVerificationApproved ? (
+                <Award size={18} />
+              ) : isVerificationRejected ? (
+                <XCircle size={18} />
+              ) : notif.type === 'amendments' ? (
+                <FileCheck size={18} />
+              ) : notif.type === 'labs' ? (
+                <Building2 size={18} />
+              ) : notif.type === 'impact' ? (
+                <Beaker size={18} />
+              ) : (
+                <FileText size={18} />
+              );
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${notif.badgeClass}`}>
-                            {notif.badge}
-                          </span>
-                          <span className="text-[11px] font-semibold text-slate-400">
-                            {notif.authority}
-                          </span>
+              const iconBg = isVerificationApproved
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                : isVerificationRejected
+                ? 'bg-rose-50 text-rose-600 border-rose-200'
+                : notif.iconBg || 'bg-blue-50 text-blue-600 border-blue-200';
+
+              const nodeColor = isVerificationApproved
+                ? 'bg-emerald-500'
+                : isVerificationRejected
+                ? 'bg-rose-500'
+                : notif.nodeColor || 'bg-blue-500';
+
+              const lineColor = isVerificationApproved
+                ? 'border-emerald-200'
+                : isVerificationRejected
+                ? 'border-rose-200'
+                : notif.lineColor || 'border-blue-200';
+
+              const badgeClass = isVerificationApproved
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : isVerificationRejected
+                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                : notif.badge_class || notif.badgeClass || 'bg-blue-50 text-blue-700 border-blue-200';
+
+              const impactText = isVerificationApproved
+                ? 'Official ISI Marking Licence Granted'
+                : isVerificationRejected
+                ? 'Compliance Deficiency Action Required'
+                : notif.impact || 'Statutory Compliance Notice';
+
+              const primaryAction = notif.action_primary || notif.actionPrimary || (isVerificationApproved ? { label: 'View Issued Licence →', target: 'verification' } : isVerificationRejected ? { label: 'Review Deficiencies & Rectify →', target: 'compliance' } : null);
+              const secondaryAction = notif.action_secondary || notif.actionSecondary || (isVerificationRejected ? { label: 'Ask AI How to Rectify', query: `How do I resolve this BIS deficiency under statutory standards: "${notif.description}"?` } : null);
+
+              return (
+                <div key={notif.id || notif._id} className="relative pl-6 sm:pl-8 group">
+                  {/* Vertical Timeline Line & Node */}
+                  <div className={`absolute left-2.5 top-0 bottom-0 w-0.5 ${lineColor} group-last:bottom-1/2`}></div>
+                  <div className={`absolute left-1.5 top-6 w-2.5 h-2.5 rounded-full ${nodeColor} ring-4 ring-white shadow-2xs`}></div>
+
+                  {/* Main Notification Card */}
+                  <div className={`bg-white rounded-3xl border shadow-sm p-5 sm:p-6 space-y-3.5 transition-all ${
+                    isVerificationApproved
+                      ? 'border-emerald-200 hover:border-emerald-300'
+                      : isVerificationRejected
+                      ? 'border-rose-200 hover:border-rose-300'
+                      : notif.unread
+                      ? 'border-blue-200/90'
+                      : 'border-slate-200/90 hover:border-slate-300'
+                  }`}>
+                    {/* Top Bar: Icon + Badge + Authority + Date & Dot */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-2xl border ${iconBg} flex items-center justify-center shrink-0 shadow-2xs mt-0.5`}>
+                          {icon}
                         </div>
 
-                        <h3 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
-                          {notif.title}
-                        </h3>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${badgeClass}`}>
+                              {notif.badge}
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-400">
+                              {notif.authority || 'Bureau of Indian Standards'}
+                            </span>
+                          </div>
+
+                          <h3 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
+                            {notif.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 text-xs">
+                        <span className="text-[11px] text-slate-400 font-medium">{notif.date}</span>
+                        {notif.unread && (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRead(notif.id || notif._id, notif.unread)}
+                            className={`w-2.5 h-2.5 rounded-full ${nodeColor} hover:opacity-75 transition-opacity`}
+                            title="Mark as read"
+                          />
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 text-xs">
-                      <span className="text-[11px] text-slate-400 font-medium">{notif.date}</span>
-                      {notif.unread && (
-                        <span className={`w-2 h-2 rounded-full ${notif.nodeColor}`}></span>
-                      )}
+                    {/* Special Officer Feedback Callout for Rejected Applications */}
+                    {isVerificationRejected && (
+                      <div className="p-4 rounded-2xl bg-rose-50/90 border border-rose-200/90 text-rose-950 text-xs space-y-2 ml-0 sm:ml-13 shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                          <AlertTriangle size={15} className="text-rose-600 shrink-0" />
+                          <span>Regulatory Officer Feedback & Deficiency Details:</span>
+                        </div>
+                        <p className="font-mono text-[11px] text-rose-900 bg-white/90 p-3 rounded-xl border border-rose-200/80 leading-relaxed font-semibold">
+                          {notif.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Special Success Callout for Approved Applications */}
+                    {isVerificationApproved && (
+                      <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200/90 text-emerald-950 text-xs space-y-2 ml-0 sm:ml-13 shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                          <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
+                          <span>Official ISI Certification Granted:</span>
+                        </div>
+                        <p className="text-[11px] text-emerald-900 bg-white/90 p-3 rounded-xl border border-emerald-200/80 leading-relaxed font-semibold">
+                          {notif.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Standard Description (for general notices) */}
+                    {!isVerificationRejected && !isVerificationApproved && (
+                      <p className="text-xs text-slate-600 leading-relaxed font-normal pl-0 sm:pl-13">
+                        {notif.description}
+                      </p>
+                    )}
+
+                    {/* Bottom Impact Chip & Action Buttons */}
+                    <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-0 sm:pl-13">
+                      <div className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-xl border w-fit shadow-2xs ${
+                        isVerificationApproved
+                          ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                          : isVerificationRejected
+                          ? 'text-rose-800 bg-rose-50 border-rose-200'
+                          : 'text-orange-700 bg-orange-50/80 border-orange-200/80'
+                      }`}>
+                        {isVerificationApproved ? (
+                          <Award size={13} className="text-emerald-600" />
+                        ) : isVerificationRejected ? (
+                          <AlertTriangle size={13} className="text-rose-600" />
+                        ) : (
+                          <AlertTriangle size={13} className="text-orange-600" />
+                        )}
+                        <span>{impactText}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {secondaryAction && (
+                          <button
+                            type="button"
+                            onClick={() => handleAction(secondaryAction)}
+                            className="px-3.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors shadow-2xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <Sparkles size={12} className="text-blue-600" />
+                            <span>{secondaryAction.label}</span>
+                          </button>
+                        )}
+
+                        {primaryAction && (
+                          <button
+                            type="button"
+                            onClick={() => handleAction(primaryAction)}
+                            className={`px-4 py-1.5 rounded-xl text-white font-bold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
+                              isVerificationApproved
+                                ? 'bg-emerald-600 hover:bg-emerald-500'
+                                : isVerificationRejected
+                                ? 'bg-rose-600 hover:bg-rose-500'
+                                : 'bg-[#0b2545] hover:bg-[#133b68]'
+                            }`}
+                          >
+                            <span>{primaryAction.label}</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Description */}
-                  <p className="text-xs text-slate-600 leading-relaxed font-normal pl-0 sm:pl-13">
-                    {notif.description}
-                  </p>
-
-                  {/* Bottom Impact Chip & Action Buttons */}
-                  <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-0 sm:pl-13">
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-orange-700 bg-orange-50/80 px-2.5 py-1 rounded-xl border border-orange-200/80 w-fit shadow-2xs">
-                      <AlertTriangle size={12} className="text-orange-600" />
-                      <span>{notif.impact}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {notif.actionSecondary && (
-                        <button
-                          type="button"
-                          onClick={() => handleAction(notif.actionSecondary)}
-                          className="px-3.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors shadow-2xs"
-                        >
-                          {notif.actionSecondary.label}
-                        </button>
-                      )}
-
-                      {notif.actionPrimary && (
-                        <button
-                          type="button"
-                          onClick={() => handleAction(notif.actionPrimary)}
-                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white font-bold text-xs transition-all shadow-xs"
-                        >
-                          <span>{notif.actionPrimary.label}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
                 </div>
-
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-2">
               <Bell size={28} className="mx-auto text-slate-300" />

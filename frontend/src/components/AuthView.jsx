@@ -161,8 +161,13 @@ export default function AuthView({ initialMode = 'login', auth, onClose, onAuthS
       setFormError("Please enter a valid email address.");
       return;
     }
-    if (signupPassword.length < 6) {
-      setFormError("Password must be at least 6 characters long.");
+    if (mobileNumber && !/^[0-9]{10}$/.test(mobileNumber)) {
+      setFormError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+    if (!passRegex.test(signupPassword)) {
+      setFormError("Password must be at least 6 characters long and include an uppercase letter, lowercase letter, and a number or special character.");
       return;
     }
     if (confirmPassword && signupPassword !== confirmPassword) {

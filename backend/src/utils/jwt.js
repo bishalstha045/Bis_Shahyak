@@ -47,29 +47,6 @@ export const verifyToken = (token) => {
     }
     return verified;
   } catch (err) {
-    // 3. Fallback: Parse Supabase Auth JWT token issued to frontend client
-    try {
-      const decoded = jwt.decode(token);
-      if (decoded && (decoded.sub || decoded.email)) {
-        const rawRole = (decoded.role || decoded.user_metadata?.role || '').toLowerCase();
-        const isAdmin = decoded.is_admin === true ||
-                        decoded.user_metadata?.is_admin === true ||
-                        rawRole === 'admin' ||
-                        rawRole === 'administrator' ||
-                        rawRole === 'officer' ||
-                        rawRole === 'director';
-        return {
-          id: decoded.sub || decoded.id,
-          email: decoded.email || decoded.user_metadata?.email || '',
-          role: isAdmin ? 'admin' : (rawRole || 'user'),
-          is_admin: isAdmin,
-          full_name: decoded.user_metadata?.full_name || (decoded.email ? decoded.email.split('@')[0] : 'Authorized Representative'),
-          company_name: decoded.user_metadata?.company_name || 'Registered Enterprise'
-        };
-      }
-    } catch (decodeErr) {
-      return null;
-    }
     return null;
   }
 };

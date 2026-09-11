@@ -150,9 +150,40 @@ export const getContent = async (req, res) => {
 
 export const getSettings = async (req, res) => {
   try {
-    const settings = await adminService.getSettings();
-    return sendSuccess(res, settings);
+    const raw = await adminService.getSettings();
+    const settings = raw?.toObject ? raw.toObject() : raw;
+    return sendSuccess(res, { settings });
   } catch (err) {
     return sendError(res, err.message, 500);
   }
 };
+
+export const updateSettings = async (req, res) => {
+  try {
+    const raw = await adminService.saveSettings(req.body, req.user);
+    const settings = raw?.toObject ? raw.toObject() : raw;
+    return sendSuccess(res, { settings }, "System settings updated and persisted successfully");
+  } catch (err) {
+    return sendError(res, err.message, 400);
+  }
+};
+
+export const deleteVerification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await adminService.deleteVerification(id);
+    return sendSuccess(res, { id }, "Verification submission deleted successfully");
+  } catch (err) {
+    return sendError(res, err.message, 400);
+  }
+};
+
+export const cleanUnwantedData = async (req, res) => {
+  try {
+    await adminService.purgeUnwantedData();
+    return sendSuccess(res, null, "Unwanted test and legacy dummy data purged successfully");
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+

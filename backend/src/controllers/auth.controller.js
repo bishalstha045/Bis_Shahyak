@@ -1,5 +1,6 @@
 import { authService } from '../services/auth.service.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { User } from '../models/User.js';
 
 export const register = async (req, res, next) => {
   try {
@@ -23,7 +24,27 @@ export const register = async (req, res, next) => {
 
     return res.status(201).json(result);
   } catch (err) {
-    return sendError(res, err.message, 400);
+    const status = err.message.includes("unavailable") ? 503 : 400;
+    return sendError(res, err.message, status);
+  }
+};
+
+export const syncUser = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return sendError(res, "Authentication required for sync.", 401);
+    }
+    const token = authHeader.split(' ')[1];
+    
+    // The body has been validated by syncSchema
+    const profileData = req.body;
+    
+    const result = await authService.syncSupabaseUser(token, profileData);
+    return res.status(200).json(result);
+  } catch (err) {
+    const status = err.message.includes("unavailable") ? 503 : 401;
+    return sendError(res, err.message, status);
   }
 };
 
@@ -38,23 +59,26 @@ export const login = async (req, res, next) => {
     const result = await authService.login({ email, password });
     return res.status(200).json(result);
   } catch (err) {
-    return sendError(res, err.message, 401);
+    const status = err.message.includes("unavailable") ? 503 : 401;
+    return sendError(res, err.message, status);
   }
 };
 
 export const demoAdmin = async (req, res, next) => {
   try {
-    const result = authService.getDemoAdminSession();
+    const result = await authService.getDemoAdminSession();
     return res.status(200).json(result);
   } catch (err) {
-    return sendError(res, err.message, 500);
+    const status = err.message.includes("unavailable") ? 503 : 500;
+    return sendError(res, err.message, status);
   }
 };
 
-
 export const me = async (req, res, next) => {
   try {
-    return sendSuccess(res, { user: req.user }, "Current user profile fetched");
+    const userDoc = await User.findById(req.user.id);
+    const userObj = userDoc ? userDoc.toJSON() : req.user;
+    return sendSuccess(res, { user: userObj }, "Current user profile fetched");
   } catch (err) {
     return sendError(res, err.message, 500);
   }
@@ -66,7 +90,8 @@ export const saveAssessment = async (req, res, next) => {
     const assessment = await authService.saveAssessment(userId, req.body);
     return sendSuccess(res, { assessment }, "Compliance assessment saved successfully", 201);
   } catch (err) {
-    return sendError(res, err.message, 500);
+    const status = err.message.includes("unavailable") ? 503 : 500;
+    return sendError(res, err.message, status);
   }
 };
 
@@ -76,6 +101,7 @@ export const getAssessments = async (req, res, next) => {
     const assessments = await authService.getAssessments(userId);
     return res.status(200).json(assessments);
   } catch (err) {
-    return sendError(res, err.message, 500);
+    const status = err.message.includes("unavailable") ? 503 : 500;
+    return sendError(res, err.message, status);
   }
 };

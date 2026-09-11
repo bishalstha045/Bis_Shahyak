@@ -74,45 +74,75 @@ const SEED_NOTIFICATIONS = [
   }
 ];
 
-let memoryNotifications = [...SEED_NOTIFICATIONS];
-
 export class NotificationService {
-  async getAll({ type = 'all', unreadOnly = false }) {
-    if (isDbConnected()) {
-      const count = await Notification.countDocuments();
-      if (count === 0) {
-        await Notification.insertMany(SEED_NOTIFICATIONS);
-      }
+  async getAll({ type = 'all', unreadOnly = false, userId = null, email = null } = {}) {
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
+    }
 
-      const query = {};
-      if (type && type !== 'all') query.type = type;
-      if (unreadOnly) query.unread = true;
+    const count = await Notification.countDocuments();
+    if (count === 0) {
+      await Notification.insertMany(SEED_NOTIFICATIONS);
+    }
 
-      return await Notification.find(query).sort({ createdAt: -1 });
-    } else {
-      let filtered = [...memoryNotifications];
-      if (type && type !== 'all') filtered = filtered.filter(n => n.type === type);
-      if (unreadOnly) filtered = filtered.filter(n => n.unread === true);
-      return filtered;
+    const query = {};
+    if (type && type !== 'all') query.type = type;
+    if (unreadOnly) query.unread = true;
+
+    if (userId || email) {
+      const orConditions = [{ user_id: 'all' }, { user_id: { $exists: false } }];
+      if (userId) orConditions.push({ user_id: String(userId) });
+      if (email) orConditions.push({ user_id: email.toLowerCase().trim() });
+      query.$or = orConditions;
+    }
+
+    return await Notification.find(query).sort({ createdAt: -1 });
+  }
+
+  async createNotification(data) {
+    if (!isDbConnected()) return null;
+    const entry = {
+      id: data.id || `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type: data.type || 'general',
+      badge: data.badge || 'OFFICIAL NOTICE',
+      badge_class: data.badge_class || 'bg-blue-50 text-blue-700 border-blue-200',
+      title: data.title,
+      authority: data.authority || 'Bureau of Indian Standards',
+      date: data.date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      unread: data.unread !== undefined ? data.unread : true,
+      impact: data.impact || 'General Notice',
+      description: data.description,
+      action_primary: data.action_primary || null,
+      action_secondary: data.action_secondary || null,
+      user_id: data.user_id || 'all'
+    };
+    try {
+      return await Notification.create(entry);
+    } catch (err) {
+      console.warn("Notification creation note:", err.message);
+      return null;
     }
   }
 
   async markAsRead(id) {
-    if (isDbConnected()) {
-      return await Notification.findOneAndUpdate({ id }, { unread: false }, { new: true });
-    } else {
-      const found = memoryNotifications.find(n => n.id === id);
-      if (found) found.unread = false;
-      return found;
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
+    return await Notification.findOneAndUpdate({ id }, { unread: false }, { new: true });
   }
 
-  async markAllAsRead() {
-    if (isDbConnected()) {
-      await Notification.updateMany({}, { unread: false });
-    } else {
-      memoryNotifications.forEach(n => n.unread = false);
+  async markAllAsRead(userIdentifier = null) {
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
+    const filter = {};
+    if (userIdentifier) {
+      filter.$or = [
+        { user_id: 'all' },
+        { user_id: userIdentifier.toLowerCase().trim() }
+      ];
+    }
+    await Notification.updateMany(filter, { unread: false });
     return { success: true };
   }
 }

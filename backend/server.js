@@ -2,6 +2,7 @@ import app from './src/app.js';
 import { env } from './src/config/env.js';
 import { connectDB } from './src/config/db.js';
 import { ragService } from './src/services/rag.service.js';
+import { adminService } from './src/services/admin.service.js';
 
 async function bootstrap() {
   console.log('====================================================');
@@ -10,6 +11,9 @@ async function bootstrap() {
 
   // Connect to Database
   await connectDB();
+
+  // Ensure initial MongoDB seeds (Admin, Standards, Licences, Submissions)
+  await adminService.ensureMongoSeeded();
 
   // Test RAG Engine Connection
   const ragStatus = await ragService.checkHealth();

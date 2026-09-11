@@ -58,6 +58,17 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required.")
 });
 
+export const syncSchema = z.object({
+  email: z.string().email("Please provide a valid email address.").optional(),
+  full_name: z.string().optional().default(""),
+  company_name: z.string().optional().default(""),
+  role: z.string().optional().default("Manufacturer"),
+  phone: z.string().optional().default(""),
+  sector: z.string().optional().default("Consumer Goods & Utensils"),
+  enterprise_category: z.string().optional().default("MSME - Small Enterprise"),
+  gstin: z.string().optional().default("")
+});
+
 export const assessmentSaveSchema = z.object({
   product_name: z.string().min(1, "product_name is required."),
   standard_id: z.string().min(1, "standard_id is required."),

@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export function useStreaming() {
   const streamChat = useCallback(async ({ query, mode, language, sector, session_id, onToken, onDone, onError }) => {
     try {
-      const response = await fetch('/api/chat/stream', {
+      const response = await fetch(`${API_BASE}/api/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, mode, language, sector, session_id })

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, CheckCircle2, AlertTriangle, XCircle, ShieldCheck, ShieldAlert, Sparkles, ArrowRight, RefreshCw, FileCheck, Download, ChevronRight, ChevronLeft, UploadCloud, Lock } from 'lucide-react';
-import { analyzeDocument } from '../services/api';
+import { analyzeDocument, uploadDocumentFile } from '../services/api';
 
 const BENCHMARK_REPORTS = [
   {
@@ -124,20 +124,31 @@ export default function DocumentAnalyzerView({ onOpenEvidence, onExportPDF }) {
     setUploadedFileName(null);
   };
 
-  const handleFileUpload = (file) => {
+  const handleFileUpload = async (file) => {
     if (!file) return;
     setUploadedFileName(file.name);
     setAnalyzing(true);
-    setTimeout(() => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (activeReport?.standard_id) {
+        formData.append('standard_id', activeReport.standard_id);
+      }
+      await uploadDocumentFile(formData);
+    } catch (err) {
+      console.warn('Document upload notice:', err.message);
+    } finally {
       setAnalyzing(false);
-    }, 800);
+    }
   };
 
-  const handleAuditClick = () => {
+  const handleAuditClick = async () => {
     setAnalyzing(true);
-    setTimeout(() => {
+    try {
+      await new Promise(r => setTimeout(r, 600));
+    } finally {
       setAnalyzing(false);
-    }, 600);
+    }
   };
 
   return (

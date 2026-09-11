@@ -14,5 +14,8 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET || 'bis_sahayak_jwt_secure_secret_2026',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   RAG_API_URL: process.env.RAG_API_URL || 'http://127.0.0.1:8000',
-  NODE_ENV: process.env.NODE_ENV || 'development'
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  SUPABASE_URL: process.env.SUPABASE_URL || 'https://cramrpbgdkqbwxxmwoxz.supabase.co',
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'sb_publishable_vTDFhoG3OeAfwki4ziw8fA_VbMThOJQ',
+  CORS_ORIGIN: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || '*'
 };

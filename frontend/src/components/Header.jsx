@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, HelpCircle, Bell, User, LogOut, Globe, ChevronRight, Menu, CheckCircle2, AlertTriangle, ShieldCheck, ArrowRight, ChevronDown, Building2, Award } from 'lucide-react';
+import { Sparkles, HelpCircle, Bell, User, LogOut, Globe, ChevronRight, Menu, CheckCircle2, AlertTriangle, ShieldCheck, ArrowRight, ChevronDown, Building2, Award, Stamp, XCircle } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/api';
 
 export default function Header({
   language,
@@ -16,13 +17,29 @@ export default function Header({
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [liveNotifications, setLiveNotifications] = useState([]);
   const dropdownRef = useRef(null);
   const userDropdownRef = useRef(null);
 
-  // When a user logs in or switches, resolve unread notifications for a clean state
+  // Fetch live notifications from backend
+  const loadNotifications = async () => {
+    try {
+      const data = await getNotifications();
+      if (Array.isArray(data)) {
+        setLiveNotifications(data);
+        const unread = data.filter(n => n.unread).length;
+        setUnreadCount(unread);
+      }
+    } catch (e) {
+      // Keep existing state on network error
+    }
+  };
+
   useEffect(() => {
-    setUnreadCount(0);
-  }, [auth?.user?.id]);
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 7000);
+    return () => clearInterval(interval);
+  }, [auth?.user?.id, auth?.user?.email]);
 
   // Click outside listener for dropdowns
   useEffect(() => {
@@ -42,8 +59,7 @@ export default function Header({
 
   const handleToggleNotifications = () => {
     setShowNotifDropdown(!showNotifDropdown);
-    // User interacted with notifications, clear the active badge indicator
-    setUnreadCount(0);
+    loadNotifications();
   };
 
   const quickNotifications = [
@@ -193,42 +209,108 @@ export default function Header({
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowNotifDropdown(false);
-                      onTabChange && onTabChange('notifications');
-                    }}
-                    className="text-[11px] text-[#0b2545] font-bold hover:underline"
-                  >
-                    View All →
-                  </button>
-                </div>
-
-                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                  {quickNotifications.map((notif) => (
-                    <div
-                      key={notif.id}
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await markAllNotificationsAsRead();
+                          setUnreadCount(0);
+                          setLiveNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+                        }}
+                        className="text-[10px] text-slate-500 hover:text-slate-800 font-semibold"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                    <button
+                      type="button"
                       onClick={() => {
                         setShowNotifDropdown(false);
-                        onTabChange && onTabChange(notif.target);
+                        onTabChange && onTabChange('notifications');
                       }}
-                      className="p-3 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 border border-slate-100 hover:border-blue-200 transition-all cursor-pointer space-y-1 group"
+                      className="text-[11px] text-[#0b2545] font-bold hover:underline"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${notif.badgeClass}`}>
-                          {notif.badge}
-                        </span>
-                        <span className="text-[10px] text-slate-400">{notif.time}</span>
+                      View All →
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {(liveNotifications.length > 0 ? liveNotifications.slice(0, 6) : quickNotifications).map((notif) => {
+                    const isVerificationApproved = notif.badge === 'VERIFICATION APPROVED' || notif.type === 'licence';
+                    const isVerificationRejected = notif.badge === 'VERIFICATION REJECTED';
+
+                    return (
+                      <div
+                        key={notif.id}
+                        onClick={async () => {
+                          if (notif.unread && (notif._id || notif.id)) {
+                            markNotificationAsRead(notif.id || notif._id);
+                            setLiveNotifications(prev => prev.map(n => (n.id === notif.id || n._id === notif.id) ? { ...n, unread: false } : n));
+                            setUnreadCount(prev => Math.max(0, prev - 1));
+                          }
+                          setShowNotifDropdown(false);
+                          const target = notif.action_primary?.target || notif.target || (isVerificationApproved ? 'verification' : 'compliance');
+                          onTabChange && onTabChange(target);
+                        }}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1.5 group ${
+                          isVerificationApproved
+                            ? 'bg-emerald-50/70 border-emerald-200/80 hover:bg-emerald-100/60'
+                            : isVerificationRejected
+                            ? 'bg-rose-50/70 border-rose-200/80 hover:bg-rose-100/60'
+                            : notif.unread
+                            ? 'bg-blue-50/50 border-blue-200/80 hover:bg-blue-50'
+                            : 'bg-slate-50/80 hover:bg-slate-100/70 border-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            {isVerificationApproved ? (
+                              <CheckCircle2 size={13} className="text-emerald-600" />
+                            ) : isVerificationRejected ? (
+                              <XCircle size={13} className="text-rose-600" />
+                            ) : null}
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                              isVerificationApproved
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : isVerificationRejected
+                                ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                : (notif.badge_class || notif.badgeClass || 'bg-blue-50 text-blue-700 border-blue-200')
+                            }`}>
+                              {notif.badge}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {notif.unread && <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>}
+                            <span className="text-[10px] text-slate-400">{notif.date || notif.time}</span>
+                          </div>
+                        </div>
+
+                        <h4 className="text-xs font-bold text-slate-900 leading-tight group-hover:text-[#0b2545]">
+                          {notif.title}
+                        </h4>
+
+                        <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                          {notif.description || notif.desc}
+                        </p>
+
+                        {(notif.action_primary || isVerificationApproved || isVerificationRejected) && (
+                          <div className="pt-1 flex items-center justify-between text-[10px] font-bold">
+                            <span className={`${
+                              isVerificationApproved
+                                ? 'text-emerald-700'
+                                : isVerificationRejected
+                                ? 'text-rose-700'
+                                : 'text-blue-700'
+                            } flex items-center gap-1`}>
+                              {notif.action_primary?.label || (isVerificationApproved ? 'View Issued Licence →' : 'Review Feedback →')}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <h4 className="text-xs font-bold text-slate-900 leading-tight group-hover:text-[#0b2545]">
-                        {notif.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        {notif.desc}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <button

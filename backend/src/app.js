@@ -12,9 +12,13 @@ import chatRoutes from './routes/chat.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import ragRoutes from './routes/rag.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import submissionRoutes from './routes/submission.routes.js';
+import reportRoutes from './routes/report.routes.js';
 
 import { healthCheck } from './controllers/rag.controller.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
+
+import { env } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,8 +29,21 @@ const app = express();
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
+
+const allowedOrigins = env.CORS_ORIGIN && env.CORS_ORIGIN !== '*' 
+  ? env.CORS_ORIGIN.split(',').map(s => s.trim()) 
+  : null;
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin || !allowedOrigins || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -57,6 +74,9 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/document', documentRoutes); // Alias for /api/document/analyze
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/submissions', submissionRoutes);
+app.use('/api/verification/submissions', submissionRoutes);
+app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', ragRoutes); // Product mapping, compliance, verifier, pdf export
 

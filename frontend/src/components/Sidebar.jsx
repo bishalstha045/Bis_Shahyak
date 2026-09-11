@@ -25,7 +25,8 @@ export default function Sidebar({
     { id: 'verification', label: 'Verification', icon: <BadgeCheck size={18} /> },
     { id: 'assistant', label: 'AI Assistant', icon: <Sparkles size={18} /> },
     { id: 'compare', label: 'Compare', icon: <Scale size={18} /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> }
+    { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> },
+    { id: 'admin', label: 'Admin Portal', icon: <Landmark size={18} />, badge: 'Officer' }
   ];
 
   return (
@@ -70,16 +71,25 @@ export default function Sidebar({
                     onTabChange(item.id);
                     if (window.innerWidth < 1024) onClose();
                   }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                     isActive
                       ? 'bg-[#0b2545] text-white shadow-xs'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
-                  <span className={isActive ? 'text-white' : 'text-slate-400'}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3">
+                    <span className={isActive ? 'text-white' : 'text-slate-400'}>
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className={`text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded ${
+                      isActive ? 'bg-blue-800 text-blue-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

@@ -1,234 +1,20 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { VerificationSubmission } from '../models/VerificationSubmission.js';
 import { Report } from '../models/Report.js';
 import { ActivityLog } from '../models/ActivityLog.js';
+import { SystemSettings } from '../models/SystemSettings.js';
+import { Standard } from '../models/Standard.js';
+import { Licence } from '../models/Licence.js';
 import { isDbConnected } from '../config/db.js';
+import { notificationService } from './notification.service.js';
 
-// Initial realistic seed submissions
-const SEED_SUBMISSIONS = [
-  {
-    id: "sub-101",
-    applicant_id: "usr-demo-01",
-    applicant_name: "Anil Sharma",
-    applicant_email: "anil.sharma@bharatcookware.in",
-    company_name: "Bharat Cookware & Appliances Pvt. Ltd.",
-    phone: "+91 98765 43210",
-    gstin: "07AAACB2194D1Z5",
-    udyam_number: "UDYAM-DL-01-0029182",
-    enterprise_category: "MSME - Small Enterprise",
-    category: "Consumer Goods & Utensils",
-    standard_id: "IS 2347:2017",
-    standard_title: "Domestic Pressure Cookers - Specification",
-    product_name: "Hard Anodised 5L Pressure Cooker",
-    submission_title: "Conformity Grant Application for 5L Cooker Range",
-    state: "Haryana",
-    district: "Gurugram",
-    factory_address: "Plot 42, Sector 8, Industrial Estate, IMT Manesar, Gurugram - 122051",
-    annual_capacity: "120,000 units/year",
-    readiness_score: 85,
-    documents: [
-      { name: "NTH_Hydrostatic_Burst_Test.pdf", type: "NABL Lab Report", lab: "National Test House (NTH)", date: "2026-08-30", status: "PASS" },
-      { name: "Safety_Valve_Fusible_Alloy_Cert.pdf", type: "Material Certificate", lab: "Shriram Institute", date: "2026-08-25", status: "PASS" },
-      { name: "Factory_Quality_Manual_FormV.pdf", type: "Inspection Dossier", lab: "Internal QC", date: "2026-08-20", status: "VERIFIED" }
-    ],
-    status: "pending",
-    cml_license: null,
-    approval_ref: null,
-    officer_remarks: "Awaiting final bursting pressure NABL report cross-verification.",
-    submitted_at: new Date("2026-09-02T10:30:00Z")
-  },
-  {
-    id: "sub-102",
-    applicant_id: "usr-demo-02",
-    applicant_name: "Vikram Chauhan",
-    applicant_email: "v.chauhan@himalayanthermal.com",
-    company_name: "Himalayan Thermal Systems LLP",
-    phone: "+91 98112 34567",
-    gstin: "02AABCH3391K1Z2",
-    udyam_number: "UDYAM-HP-02-0018273",
-    enterprise_category: "MSME - Micro Enterprise",
-    category: "Household Electrical",
-    standard_id: "IS 302 (Part 2/Sec 21):2024",
-    standard_title: "Safety of Household Electrical Appliances - Electric Water Heaters",
-    product_name: "25L Storage Electric Geyser (5 Star)",
-    submission_title: "QCO Compliance Dossier for 25L Vertical Geyser",
-    state: "Himachal Pradesh",
-    district: "Solan",
-    factory_address: "Industrial Area Phase 2, Baddi, Solan - 173205",
-    annual_capacity: "45,000 units/year",
-    readiness_score: 65,
-    documents: [
-      { name: "High_Voltage_Dielectric_Test.pdf", type: "NABL Lab Report", lab: "ERDA Vadodara", date: "2026-08-15", status: "REVIEW_NEEDED" },
-      { name: "Earthing_Continuity_Check.pdf", type: "Inspection Dossier", lab: "Internal QC", date: "2026-08-18", status: "PASS" }
-    ],
-    status: "under_review",
-    cml_license: null,
-    approval_ref: null,
-    officer_remarks: "High-voltage dielectric test certificate pending re-verification.",
-    submitted_at: new Date("2026-09-04T14:15:00Z")
-  },
-  {
-    id: "sub-103",
-    applicant_id: "usr-demo-03",
-    applicant_name: "Sunil Kulkarni",
-    applicant_email: "sunil@apexfootwear.in",
-    company_name: "Apex Athletic Footwear India Ltd.",
-    phone: "+91 99887 76655",
-    gstin: "27AAACA5512B1Z8",
-    udyam_number: "UDYAM-MH-19-0091823",
-    enterprise_category: "MSME - Medium Enterprise",
-    category: "Footwear & Sports Goods",
-    standard_id: "IS 15844 (Part 1):2023",
-    standard_title: "Sports Footwear (General Purpose) - Specification",
-    product_name: "Performance Running & Training Shoes",
-    submission_title: "Mandatory QCO Footwear Certification Submission",
-    state: "Maharashtra",
-    district: "Pune",
-    factory_address: "Gat No. 312, Chakan Industrial Corridor, Pune - 410501",
-    annual_capacity: "500,000 pairs/year",
-    readiness_score: 95,
-    documents: [
-      { name: "Outsole_Abrasion_Flex_Crack_Test.pdf", type: "NABL Lab Report", lab: "FDDI Noida", date: "2026-08-20", status: "PASS" },
-      { name: "Upper_Tear_Strength_Certificate.pdf", type: "Material Certificate", lab: "CLRI Chennai", date: "2026-08-22", status: "PASS" }
-    ],
-    status: "verified",
-    cml_license: "CM/L-8419203",
-    approval_ref: "BIS/QCO/2026/MH-0819",
-    officer_remarks: "Meets all outsole abrasion and flex cracking criteria. Granted 3-year ISI marking licence.",
-    verified_by: "Dr. Rajesh Verma",
-    verified_at: new Date("2026-08-28T11:00:00Z"),
-    submitted_at: new Date("2026-08-15T09:00:00Z")
-  },
-  {
-    id: "sub-104",
-    applicant_id: "usr-demo-04",
-    applicant_name: "Rajesh Agarwal",
-    applicant_email: "rajesh@quickpack.in",
-    company_name: "QuickPack Art & Chromo Boards",
-    phone: "+91 98200 98200",
-    gstin: "24AABCP8812A1ZX",
-    udyam_number: "None (Unregistered)",
-    enterprise_category: "Large Commercial Enterprise",
-    category: "Paper & Packaging",
-    standard_id: "IS 4658:2019",
-    standard_title: "Coated Paper and Board - Specification",
-    product_name: "Food Contact Grade Art Paper",
-    submission_title: "Application for Food Packaging Compliance",
-    state: "Gujarat",
-    district: "Vapi",
-    factory_address: "GIDC Industrial Estate, Vapi - 396195",
-    annual_capacity: "15,000 MT/year",
-    readiness_score: 40,
-    documents: [
-      { name: "Heavy_Metal_Lead_Analysis.pdf", type: "Lab Report", lab: "Private Local Lab", date: "2026-07-20", status: "FAIL" }
-    ],
-    status: "rejected",
-    cml_license: null,
-    approval_ref: null,
-    officer_remarks: "Rejected under BIS Act 2016 Sec 14: Failed to provide NABL moisture & food contact heavy metal testing.",
-    rejection_reason: "Heavy metal extraction test showed Lead (Pb) exceeding permissible threshold under IS 4658 Clause 4.2. Incomplete NABL accreditation.",
-    rejected_by: "Dr. Rajesh Verma",
-    rejected_at: new Date("2026-08-12T16:00:00Z"),
-    submitted_at: new Date("2026-08-10T12:00:00Z")
-  }
-];
-
-// Initial realistic seed reports (grievances / compliance violations)
-const SEED_REPORTS = [
-  {
-    id: "rep-201",
-    reporter_id: "usr-citizen-09",
-    reporter_name: "Consumer Safety Forum (Delhi)",
-    reporter_email: "vigilance@consumersafety.org.in",
-    target_type: "content",
-    target_id: "prod-fake-geyser-01",
-    target_title: "Counterfeit ISI Mark on Immersion Water Heaters",
-    reason: "Counterfeit ISI mark without valid CM/L license number displayed on retail packaging.",
-    description: "Retail units found in Bhagirath Palace wholesale electrical market displaying ISI mark but missing the mandatory 7-digit CML registration number.",
-    severity: "critical",
-    status: "open",
-    evidence_urls: ["https://example.com/evidence/fake_isi_photo.jpg"],
-    created_at: new Date("2026-09-08T09:30:00Z")
-  },
-  {
-    id: "rep-202",
-    reporter_id: "usr-demo-01",
-    reporter_name: "Anil Sharma",
-    reporter_email: "anil.sharma@bharatcookware.in",
-    target_type: "standard",
-    target_id: "IS 2347:2017",
-    target_title: "Discrepancy in Clause 6.2 Gasket Tensile Strength",
-    reason: "Ambiguity in third amendment regarding synthetic silicone vs nitrile rubber test duration.",
-    description: "Requesting official clarification from CED Committee on whether 72-hour accelerated aging test applies to imported silicone gaskets.",
-    severity: "medium",
-    status: "under_review",
-    evidence_urls: [],
-    created_at: new Date("2026-09-06T15:45:00Z")
-  },
-  {
-    id: "rep-203",
-    reporter_id: "usr-inspector-04",
-    reporter_name: "Northern Surveillance Bureau",
-    reporter_email: "audit.north@standards.internal",
-    target_type: "user",
-    target_id: "usr-unverified-89",
-    target_title: "Substandard Steel Wire Import Declaration",
-    reason: "Non-compliant raw material declaration for IS 280 galvanized wire.",
-    description: "Physical consignment inspection revealed zinc coating mass below 60 g/m2 mandatory threshold.",
-    severity: "high",
-    status: "resolved",
-    resolution_notes: "Notice issued to importer. Consignment held at ICD Tughlakabad until re-testing passes.",
-    action_taken: "Issued Statutory Notice under BIS Act Section 17",
-    resolved_by: "Dr. Rajesh Verma",
-    resolved_at: new Date("2026-09-01T14:00:00Z"),
-    created_at: new Date("2026-08-29T11:00:00Z")
-  }
-];
-
-// Initial realistic activity logs
-const SEED_ACTIVITIES = [
-  {
-    id: "act-301",
-    action: "Admin verified submission",
-    admin_id: "usr-admin-01",
-    admin_name: "Dr. Rajesh Verma",
-    admin_email: "director.admin@standards.internal",
-    target_type: "submission",
-    target_id: "sub-103",
-    target_title: "Apex Athletic Footwear India Ltd. (IS 15844-1)",
-    details: { cml_license: "CM/L-8419203", approval_ref: "BIS/QCO/2026/MH-0819" },
-    timestamp: new Date("2026-08-28T11:00:00Z")
-  },
-  {
-    id: "act-302",
-    action: "Admin rejected submission",
-    admin_id: "usr-admin-01",
-    admin_name: "Dr. Rajesh Verma",
-    admin_email: "director.admin@standards.internal",
-    target_type: "submission",
-    target_id: "sub-104",
-    target_title: "QuickPack Art & Chromo Boards (IS 4658)",
-    details: { reason: "Failed heavy metal extraction test under Clause 4.2" },
-    timestamp: new Date("2026-08-12T16:00:00Z")
-  },
-  {
-    id: "act-303",
-    action: "Admin resolved report",
-    admin_id: "usr-admin-01",
-    admin_name: "Dr. Rajesh Verma",
-    admin_email: "director.admin@standards.internal",
-    target_type: "report",
-    target_id: "rep-203",
-    target_title: "Substandard Steel Wire Import Declaration",
-    details: { action: "Issued Statutory Notice under BIS Act Section 17" },
-    timestamp: new Date("2026-09-01T14:00:00Z")
-  }
-];
-
-// Synchronized in-memory storage fallback
-const memorySubmissions = new Map(SEED_SUBMISSIONS.map(s => [s.id, { ...s }]));
-const memoryReports = new Map(SEED_REPORTS.map(r => [r.id, { ...r }]));
-const memoryActivities = [...SEED_ACTIVITIES];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export class AdminService {
   constructor() {
@@ -239,21 +25,135 @@ export class AdminService {
   async ensureMongoSeeded() {
     if (this.seededMongo || !isDbConnected()) return;
     try {
-      const subCount = await VerificationSubmission.countDocuments();
-      if (subCount === 0) {
-        await VerificationSubmission.insertMany(SEED_SUBMISSIONS);
+      // 1. Seed System Settings
+      const settingsCount = await SystemSettings.countDocuments();
+      if (settingsCount === 0) {
+        await SystemSettings.create({
+          system_name: "Bureau of Indian Standards — Compliance Control Gateway",
+          version: "2.0.0",
+          qco_enforcement_mode: "Strict Gazette Mandatory",
+          auto_cml_issuance: true,
+          require_dual_signoff: false,
+          high_risk_categories: ["Household Electrical", "Chemical", "Medical & Healthcare Devices", "Automotive Safety"],
+          log_retention_days: 90,
+          last_saved_by: "Dr. Rajesh Verma",
+          last_saved_at: new Date()
+        });
       }
-      const repCount = await Report.countDocuments();
-      if (repCount === 0) {
-        await Report.insertMany(SEED_REPORTS);
+
+      // 2. Seed Standards from standards_metadata.json
+      const stdCount = await Standard.countDocuments();
+      if (stdCount === 0) {
+        try {
+          const standardsPath = path.resolve(__dirname, '../../data/standards_metadata.json');
+          if (fs.existsSync(standardsPath)) {
+            const raw = JSON.parse(fs.readFileSync(standardsPath, 'utf8'));
+            const docs = raw.map(s => ({
+              standard_id: s.id,
+              title: s.title,
+              sector: s.sector,
+              year: s.year || '2024',
+              status: s.status || 'Current / Mandatory under QCO',
+              effective_date: s.effective_date || '2025-01-01',
+              superseded_status: s.superseded_status || 'Active',
+              is_qco_mandatory: (s.status || '').toLowerCase().includes('mandatory') || (s.status || '').toLowerCase().includes('qco'),
+              qco_reference: 'Gazette of India Quality Control Order 2026',
+              applicable_products: s.applicable_products || [],
+              characteristics: s.characteristics || [],
+              intended_use: s.intended_use || [],
+              key_clauses: s.key_clauses || [],
+              source_url: s.source_url || '',
+              active: true
+            }));
+            await Standard.insertMany(docs);
+          }
+        } catch (stdErr) {
+          console.warn("Standards seeding note:", stdErr.message);
+        }
       }
-      const actCount = await ActivityLog.countDocuments();
-      if (actCount === 0) {
-        await ActivityLog.insertMany(SEED_ACTIVITIES);
+
+      // 3. Official Admin Account ONLY
+      const adminExists = await User.findOne({ email: "admin@admin.com" });
+      if (!adminExists) {
+        const adminHashedPassword = await bcrypt.hash('Admin@123', 10);
+        await User.create({
+          email: "admin@admin.com",
+          password: adminHashedPassword,
+          full_name: "Chief Regulatory Officer",
+          company_name: "Bureau of Indian Standards",
+          role: "admin",
+          phone: "011-23230131",
+          sector: "Central Regulatory Directorate",
+          enterprise_category: "Statutory Standards Authority",
+          gstin: "07AAAAA0000A1Z5",
+          is_active: true,
+          is_admin: true,
+          status: "active"
+        });
       }
+
+      // Automatically purge any leftover legacy dummy test data
+      await this.purgeUnwantedData();
+
       this.seededMongo = true;
     } catch (e) {
       console.warn("MongoDB seed note:", e.message);
+    }
+  }
+
+  async purgeUnwantedData() {
+    if (!isDbConnected()) return;
+    try {
+      const dummyEmailPatterns = [
+        /^msme\.partner/i,
+        /^dormant\.unit/i,
+        /^enterprise\.\d+/i,
+        /^manufacturer_\d+/i,
+        /^app_user_\d+/i,
+        /^rej_user_\d+/i,
+        /^demo\.user@/i,
+        /^director\.admin@/i,
+        /^anil\.sharma@bharatcookware/i,
+        /^v\.chauhan@himalayanthermal/i,
+        /^sunil@apexfootwear/i,
+        /^test\.user/i,
+        /@manufacture\.test/i,
+        /bajajelectricals-demo/i,
+        /apexpressure/i,
+        /^demo\.manufacturer@/i
+      ];
+
+      await User.deleteMany({
+        $or: dummyEmailPatterns.map(pattern => ({ email: pattern }))
+      });
+
+      await VerificationSubmission.deleteMany({
+        $or: [
+          { id: { $in: ['sub-101', 'sub-102', 'sub-103', 'sub-104'] } },
+          { applicant_email: { $in: ['anil.sharma@bharatcookware.in', 'v.chauhan@himalayanthermal.com', 'sunil@apexfootwear.in', 'rajesh@quickpack.in', 'demo.manufacturer@example.com'] } },
+          ...dummyEmailPatterns.map(pattern => ({ applicant_email: pattern }))
+        ]
+      });
+
+      await Report.deleteMany({
+        $or: [
+          { id: { $in: ['rep-201', 'rep-202', 'rep-203'] } },
+          { reporter_email: { $in: ['vigilance@consumersafety.org.in', 'anil.sharma@bharatcookware.in', 'audit.north@standards.internal', 'kavita.citizen@consumerhelp.in', 'arvind@msmecouncil.org'] } }
+        ]
+      });
+
+      await ActivityLog.deleteMany({
+        $or: [
+          { id: { $in: ['act-301', 'act-302', 'act-303', 'act-1', 'act-2', 'act-3', 'act-4'] } },
+          { admin_email: 'director.admin@standards.internal' }
+        ]
+      });
+
+      await Licence.deleteMany({
+        cml_number: { $in: ['CM/L-7128394', 'CM/L-8492015', 'CM/L-5201948', 'CM/L-8419203', 'CM/L-8291045', 'CM/L-7188564', 'CM/L-7409544'] }
+      });
+    } catch (purgeErr) {
+      console.warn("Purge unwanted data note:", purgeErr.message);
     }
   }
 
@@ -262,21 +162,19 @@ export class AdminService {
     const entry = {
       id: "act-" + Date.now(),
       action,
-      admin_id: adminUser?.id || "usr-admin-01",
+      admin_id: adminUser?.id || adminUser?._id?.toString() || "usr-admin-01",
       admin_name: adminUser?.full_name || adminUser?.email || "Chief Compliance Officer",
-      admin_email: adminUser?.email || "director.admin@standards.internal",
+      admin_email: adminUser?.email || "admin@admin.com",
       target_type: targetType,
-      target_id: targetId,
+      target_id: String(targetId),
       target_title: targetTitle,
       details,
       timestamp: new Date()
     };
 
-    memoryActivities.unshift(entry);
-
     if (isDbConnected()) {
       try {
-        await ActivityLog.create(entry);
+        return await ActivityLog.create(entry);
       } catch (e) {
         console.warn("Activity log save note:", e.message);
       }
@@ -287,50 +185,19 @@ export class AdminService {
   // 1. Dashboard Metrics
   async getDashboardStats() {
     await this.ensureMongoSeeded();
-
-    let totalUsers = 0;
-    let activeUsers = 0;
-    let pendingVerification = 0;
-    let verified = 0;
-    let rejected = 0;
-    let reports = 0;
-    let recentActivities = [];
-
-    if (isDbConnected()) {
-      try {
-        const [uTotal, uActive, sPending, sVerified, sRejected, rCount, recActs] = await Promise.all([
-          User.countDocuments({ is_deleted: { $ne: true } }),
-          User.countDocuments({ status: 'active', is_deleted: { $ne: true } }),
-          VerificationSubmission.countDocuments({ status: 'pending' }),
-          VerificationSubmission.countDocuments({ status: 'verified' }),
-          VerificationSubmission.countDocuments({ status: 'rejected' }),
-          Report.countDocuments({ status: { $in: ['open', 'under_review'] } }),
-          ActivityLog.find().sort({ timestamp: -1 }).limit(6)
-        ]);
-
-        totalUsers = Math.max(uTotal, 24); // Account for demo seeded records
-        activeUsers = Math.max(uActive, 21);
-        pendingVerification = sPending;
-        verified = sVerified;
-        rejected = sRejected;
-        reports = rCount;
-        recentActivities = recActs;
-      } catch (err) {
-        console.warn("Mongo stats error, falling back:", err.message);
-      }
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
 
-    if (!recentActivities || recentActivities.length === 0) {
-      // Memory fallback aggregation
-      const subs = Array.from(memorySubmissions.values());
-      pendingVerification = subs.filter(s => s.status === 'pending').length;
-      verified = subs.filter(s => s.status === 'verified').length;
-      rejected = subs.filter(s => s.status === 'rejected').length;
-      reports = Array.from(memoryReports.values()).filter(r => r.status === 'open' || r.status === 'under_review').length;
-      totalUsers = totalUsers || 24;
-      activeUsers = activeUsers || 21;
-      recentActivities = memoryActivities.slice(0, 6);
-    }
+    const [totalUsers, activeUsers, pendingVerification, verified, rejected, reports, recentActivities] = await Promise.all([
+      User.countDocuments({ is_deleted: { $ne: true } }),
+      User.countDocuments({ status: 'active', is_deleted: { $ne: true } }),
+      VerificationSubmission.countDocuments({ status: { $in: ['pending', 'under_review'] } }),
+      VerificationSubmission.countDocuments({ status: 'verified' }),
+      VerificationSubmission.countDocuments({ status: 'rejected' }),
+      Report.countDocuments({ status: { $in: ['open', 'under_review'] } }),
+      ActivityLog.find().sort({ timestamp: -1 }).limit(8)
+    ]);
 
     return {
       total_users: totalUsers,
@@ -339,79 +206,275 @@ export class AdminService {
       verified: verified,
       rejected: rejected,
       reports: reports,
-      recent_activities: recentActivities
+      recent_activities: recentActivities,
+      // Compatibility aliases
+      totalUsers,
+      activeUsers,
+      pendingVerification,
+      verifiedSubmissions: verified,
+      rejectedSubmissions: rejected,
+      openReports: reports,
+      recentActivity: recentActivities
     };
+  }
+
+  // Ensure an organization verification submission exists for any user/enterprise
+  async createOrUpdateOrgVerification(user) {
+    if (!isDbConnected() || !user || !user.email) return null;
+
+    const role = (user.role || '').toLowerCase();
+    if (user.is_admin === true || role === 'admin' || role === 'administrator') {
+      return null;
+    }
+
+    const companyName = (user.company_name || '').trim();
+    if (!companyName || companyName === 'Independent Enterprise') {
+      return null;
+    }
+    const sector = user.sector || 'Consumer Goods & Utensils';
+    const enterpriseCategory = user.enterprise_category || 'MSME - Small Enterprise';
+    const gstin = user.gstin || '';
+    const phone = user.phone || '+91 98765 43210';
+    const udyamNumber = user.udyam_number || (gstin ? `UDYAM-DL-01-${gstin.slice(2, 9)}` : 'UDYAM-REG-PENDING');
+
+    // Select suitable standard according to industry sector
+    let standardId = 'IS 17803:2022';
+    let standardTitle = 'Stainless Steel Vacuum Flasks / Insulated Water Bottles - Specification';
+    let productName = `${companyName} Insulated Ware`;
+
+    const lowerSector = sector.toLowerCase();
+    if (lowerSector.includes('footwear')) {
+      standardId = 'IS 15844 (Part 1):2023';
+      standardTitle = 'Sports Footwear - Specification';
+      productName = `${companyName} Athletic & Industrial Footwear`;
+    } else if (lowerSector.includes('electrical') || lowerSector.includes('geyser') || lowerSector.includes('appliance')) {
+      standardId = 'IS 302 (Part 2/Sec 3):2021';
+      standardTitle = 'Safety of Household Electrical Appliances - Specification';
+      productName = `${companyName} Electrical Appliances`;
+    } else if (lowerSector.includes('paper') || lowerSector.includes('pack')) {
+      standardId = 'IS 4658:2019';
+      standardTitle = 'Coated Paper and Board - Specification';
+      productName = `${companyName} Food Contact Paper Products`;
+    } else if (lowerSector.includes('cooker') || lowerSector.includes('utensil') || lowerSector.includes('steel')) {
+      standardId = 'IS 17803:2022';
+      standardTitle = 'Stainless Steel Vacuum Flasks / Insulated Water Bottles - Specification';
+      productName = `${companyName} Stainless Steel Cookware & Bottles`;
+    }
+
+    const userEmail = user.email.toLowerCase().trim();
+    const userId = user._id ? user._id.toString() : (user.id || '');
+
+    // Check if a submission already exists for this applicant
+    let submission = await VerificationSubmission.findOne({
+      $or: [
+        { applicant_id: userId },
+        { applicant_email: userEmail }
+      ]
+    });
+
+    if (submission) {
+      if (submission.status === 'pending' || submission.status === 'under_review') {
+        submission.company_name = companyName;
+        submission.applicant_name = user.full_name || submission.applicant_name;
+        submission.phone = phone;
+        if (gstin) submission.gstin = gstin;
+        if (udyamNumber) submission.udyam_number = udyamNumber;
+        submission.enterprise_category = enterpriseCategory;
+        submission.category = sector;
+        submission.standard_id = standardId;
+        submission.standard_title = standardTitle;
+        submission.product_name = productName;
+        submission.submission_title = `Organization Verification Application — ${companyName}`;
+        await submission.save();
+      }
+      return submission;
+    }
+
+    // Otherwise create brand new pending VerificationSubmission
+    const newSubmission = await VerificationSubmission.create({
+      applicant_id: userId,
+      applicant_name: user.full_name || userEmail.split('@')[0],
+      applicant_email: userEmail,
+      company_name: companyName,
+      phone: phone,
+      gstin: gstin || 'Pending Verification',
+      udyam_number: udyamNumber,
+      enterprise_category: enterpriseCategory,
+      category: sector,
+      standard_id: standardId,
+      standard_title: standardTitle,
+      product_name: productName,
+      submission_title: `Organization Verification Application — ${companyName}`,
+      state: user.state || 'Delhi',
+      district: user.district || 'New Delhi',
+      factory_address: user.factory_address || 'Industrial Area Unit 1',
+      annual_capacity: '50,000 units/year',
+      readiness_score: 80,
+      documents: [
+        {
+          name: "Enterprise_Registration_Certificate.pdf",
+          type: "Incorporation / MSME Proof",
+          lab: "Ministry of Corporate Affairs / MSME",
+          date: new Date().toISOString().split('T')[0],
+          status: "VERIFIED"
+        },
+        {
+          name: "GSTIN_Registration_Filing.pdf",
+          type: "Tax Clearance",
+          lab: "GST Network",
+          date: new Date().toISOString().split('T')[0],
+          status: "VERIFIED"
+        }
+      ],
+      status: 'pending',
+      submitted_at: new Date()
+    });
+
+    // Record activity audit trail
+    await this.recordActivity({
+      action: "New Organization Verification Application Submitted",
+      adminUser: { id: "system", full_name: "Automated Onboarding Gate", email: "system@bis.gov.in" },
+      targetType: "submission",
+      targetId: String(newSubmission._id),
+      targetTitle: `${companyName} (${userEmail})`,
+      details: {
+        company_name: companyName,
+        applicant: user.full_name,
+        sector,
+        enterprise_category: enterpriseCategory,
+        standard_id: standardId
+      }
+    });
+
+    return newSubmission;
   }
 
   // 2. Verification Submissions
   async getVerifications({ search = '', status = 'ALL', category = 'ALL' } = {}) {
     await this.ensureMongoSeeded();
-
-    let list = [];
-    if (isDbConnected()) {
-      try {
-        const query = {};
-        if (status && status !== 'ALL') {
-          query.status = status.toLowerCase();
-        }
-        if (category && category !== 'ALL') {
-          query.category = new RegExp(category, 'i');
-        }
-        if (search) {
-          query.$or = [
-            { applicant_name: new RegExp(search, 'i') },
-            { company_name: new RegExp(search, 'i') },
-            { standard_id: new RegExp(search, 'i') },
-            { product_name: new RegExp(search, 'i') }
-          ];
-        }
-        list = await VerificationSubmission.find(query).sort({ submitted_at: -1 });
-      } catch (e) {
-        list = [];
-      }
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
 
-    if (!list || list.length === 0) {
-      list = Array.from(memorySubmissions.values());
-      if (status && status !== 'ALL') {
-        list = list.filter(s => s.status.toLowerCase() === status.toLowerCase());
-      }
-      if (category && category !== 'ALL') {
-        list = list.filter(s => (s.category || '').toLowerCase().includes(category.toLowerCase()));
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        list = list.filter(s =>
-          (s.applicant_name || '').toLowerCase().includes(q) ||
-          (s.company_name || '').toLowerCase().includes(q) ||
-          (s.standard_id || '').toLowerCase().includes(q) ||
-          (s.product_name || '').toLowerCase().includes(q)
-        );
-      }
+    const query = {};
+    if (status && status !== 'ALL') {
+      query.status = status.toLowerCase();
     }
-
-    return list;
+    if (category && category !== 'ALL') {
+      query.category = new RegExp(category, 'i');
+    }
+    if (search) {
+      query.$or = [
+        { applicant_name: new RegExp(search, 'i') },
+        { company_name: new RegExp(search, 'i') },
+        { standard_id: new RegExp(search, 'i') },
+        { product_name: new RegExp(search, 'i') }
+      ];
+    }
+    return await VerificationSubmission.find(query).sort({ submitted_at: -1 });
   }
 
   async getVerificationById(id) {
     await this.ensureMongoSeeded();
-    if (isDbConnected()) {
-      try {
-        const found = await VerificationSubmission.findOne({ $or: [{ _id: id }, { id }] });
-        if (found) return found;
-      } catch (e) {}
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
-    return memorySubmissions.get(id) || Array.from(memorySubmissions.values()).find(s => s.id === id || s._id === id);
+    return await VerificationSubmission.findOne({ $or: [{ _id: id }, { id }] });
   }
 
   async approveVerification(id, adminUser) {
-    const randomLicence = `CM/L-${Math.floor(7000000 + Math.random() * 2000000)}`;
-    const randomApprovalRef = `BIS/CONF/${new Date().getFullYear()}/${String(id).slice(-4).toUpperCase()}`;
     const timestamp = new Date();
     const adminName = adminUser?.full_name || adminUser?.email || "Chief Compliance Officer";
 
-    let updated = null;
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
+    }
 
+    // 1. Fetch current submission
+    const submission = await VerificationSubmission.findOne({ $or: [{ _id: id }, { id }] });
+    if (!submission) throw new Error("Verification dossier not found.");
+
+    // 2. Fetch System Settings from MongoDB
+    const settings = await this.getSettings();
+
+    // 3. Dual-Signoff Check
+    const isHighRisk = (settings.high_risk_categories || []).some(cat =>
+      (submission.category || '').toLowerCase().includes(cat.toLowerCase())
+    );
+
+    if (settings.require_dual_signoff && isHighRisk && !submission.first_approver) {
+      // Record first officer signoff; dossier enters 'under_review' awaiting secondary concurrence
+      let dualUpdated = null;
+      if (isDbConnected()) {
+        try {
+          dualUpdated = await VerificationSubmission.findOneAndUpdate(
+            { $or: [{ _id: id }, { id }] },
+            {
+              $set: {
+                status: 'under_review',
+                first_approver: adminName,
+                first_approved_at: timestamp,
+                officer_remarks: `Preliminary concurrence by ${adminName}. Awaiting secondary regulatory signoff.`
+              }
+            },
+            { new: true }
+          );
+        } catch (e) {}
+      }
+
+      await this.recordActivity({
+        action: "First Approval Concurred (Dual-Signoff Required)",
+        adminUser,
+        targetType: "submission",
+        targetId: id,
+        targetTitle: `${submission.company_name} (${submission.standard_id})`,
+        details: { first_approver: adminName, status: "under_review", dual_signoff: true }
+      });
+
+      return dualUpdated || {
+        ...submission,
+        status: 'under_review',
+        first_approver: adminName,
+        first_approved_at: timestamp,
+        officer_remarks: `Preliminary concurrence by ${adminName}. Awaiting secondary regulatory signoff.`
+      };
+    }
+
+    // 4. Final Approval & CML License Generation
+    const randomApprovalRef = `BIS/CONF/${new Date().getFullYear()}/${String(id).slice(-4).toUpperCase()}`;
+    let cmlLicense = null;
+
+    if (settings.auto_cml_issuance) {
+      cmlLicense = submission.cml_license || `CM/L-${Math.floor(7000000 + Math.random() * 2000000)}`;
+
+      // Save generated license directly into MongoDB Licence collection
+      if (isDbConnected()) {
+        try {
+          await Licence.findOneAndUpdate(
+            { cml_number: cmlLicense },
+            {
+              cml_number: cmlLicense,
+              standard_id: submission.standard_id,
+              standard_title: submission.standard_title,
+              manufacturer_name: submission.company_name,
+              brand_name: submission.product_name,
+              factory_address: submission.factory_address || `${submission.district || 'District'}, ${submission.state || 'State'}`,
+              validity_start: new Date(),
+              validity_end: new Date(Date.now() + 3 * 365 * 86400000),
+              grant_date: timestamp,
+              status: 'OPERATIVE',
+              submission_id: String(submission._id || id),
+              is_qco_mandated: true
+            },
+            { upsert: true }
+          );
+        } catch (licErr) {
+          console.warn("Licence save note:", licErr.message);
+        }
+      }
+    }
+
+    let updated = null;
     if (isDbConnected()) {
       try {
         updated = await VerificationSubmission.findOneAndUpdate(
@@ -419,11 +482,13 @@ export class AdminService {
           {
             $set: {
               status: 'verified',
-              cml_license: randomLicence,
+              cml_license: cmlLicense,
               approval_ref: randomApprovalRef,
               verified_by: adminName,
               verified_at: timestamp,
-              officer_remarks: 'Application verified & approved. Statutory ISI marking licence granted.'
+              second_approver: submission.first_approver ? adminName : null,
+              second_approved_at: submission.first_approver ? timestamp : null,
+              officer_remarks: `Application verified & approved. ${cmlLicense ? `Statutory ISI Licence ${cmlLicense} granted.` : 'Licence pending manual issuance.'}`
             }
           },
           { new: true }
@@ -431,32 +496,65 @@ export class AdminService {
       } catch (e) {}
     }
 
-    // Update memory cache
-    const mem = memorySubmissions.get(id) || Array.from(memorySubmissions.values()).find(s => s.id === id || s._id === id);
-    if (mem) {
-      mem.status = 'verified';
-      mem.cml_license = randomLicence;
-      mem.approval_ref = randomApprovalRef;
-      mem.verified_by = adminName;
-      mem.verified_at = timestamp;
-      mem.officer_remarks = 'Application verified & approved. Statutory ISI marking licence granted.';
-      if (!updated) updated = mem;
+    if (!updated) {
+      throw new Error("Verification dossier not found.");
+    }
+
+    // Synchronize verification status on User record
+    if (submission.applicant_email) {
+      try {
+        await User.updateOne(
+          { email: submission.applicant_email.toLowerCase() },
+          { $set: { is_verified: true, verification_status: 'verified' } }
+        );
+      } catch (uErr) {
+        console.warn("User verification status sync note:", uErr.message);
+      }
+
+      // Dispatch in-app notification to the applicant
+      try {
+        await notificationService.createNotification({
+          type: 'verification',
+          badge: 'VERIFICATION APPROVED',
+          badge_class: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          title: `Conformity Verification Approved: CML Licence ${cmlLicense || ''} Issued`,
+          authority: 'Bureau of Indian Standards • Regulatory Directorate',
+          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          unread: true,
+          impact: 'Statutory ISI Marking Licence Granted',
+          description: `Congratulations! Your organization verification application for "${submission.company_name}" has been officially approved by regulatory officers. Authentic CML Licence ${cmlLicense} has been granted under ${submission.standard_id}. You are authorized to display the Standard ISI Mark.`,
+          action_primary: { label: 'View Certificate & Licence →', target: 'verification', cml_number: cmlLicense },
+          action_secondary: { label: 'Ask AI About STI Rules', query: `What are the Scheme of Inspection and Testing (STI) rules for licence ${cmlLicense} under ${submission.standard_id}?` },
+          user_id: submission.applicant_email.toLowerCase().trim()
+        });
+      } catch (notifErr) {
+        console.warn("Applicant approval notification note:", notifErr.message);
+      }
     }
 
     // Record activity audit trail
     await this.recordActivity({
-      action: "Admin verified submission",
+      action: cmlLicense ? `Licence Granted (${cmlLicense})` : "Admin verified submission",
       adminUser,
       targetType: "submission",
       targetId: id,
       targetTitle: updated?.company_name ? `${updated.company_name} (${updated.standard_id})` : `Submission #${id}`,
-      details: { cml_license: randomLicence, approval_ref: randomApprovalRef }
+      details: { cml_license: cmlLicense, approval_ref: randomApprovalRef }
     });
 
     return updated;
   }
 
   async rejectVerification(id, rejectionReason, adminUser) {
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
+    }
+
+    const submission = await VerificationSubmission.findOne({ $or: [{ _id: id }, { id }] });
+    if (!submission) {
+      throw new Error("Verification dossier not found.");
+    }
+
     if (!rejectionReason || !rejectionReason.trim()) {
       throw new Error("A rejection reason is strictly required to reject a submission.");
     }
@@ -464,34 +562,54 @@ export class AdminService {
     const timestamp = new Date();
     const adminName = adminUser?.full_name || adminUser?.email || "Chief Compliance Officer";
 
-    let updated = null;
+    const updated = await VerificationSubmission.findOneAndUpdate(
+      { $or: [{ _id: id }, { id }] },
+      {
+        $set: {
+          status: 'rejected',
+          rejection_reason: rejectionReason.trim(),
+          rejected_by: adminName,
+          rejected_at: timestamp,
+          officer_remarks: `Rejected: ${rejectionReason.trim()}`
+        }
+      },
+      { new: true }
+    );
 
-    if (isDbConnected()) {
-      try {
-        updated = await VerificationSubmission.findOneAndUpdate(
-          { $or: [{ _id: id }, { id }] },
-          {
-            $set: {
-              status: 'rejected',
-              rejection_reason: rejectionReason.trim(),
-              rejected_by: adminName,
-              rejected_at: timestamp,
-              officer_remarks: `Rejected: ${rejectionReason.trim()}`
-            }
-          },
-          { new: true }
-        );
-      } catch (e) {}
+    if (!updated) {
+      throw new Error("Verification dossier not found.");
     }
 
-    const mem = memorySubmissions.get(id) || Array.from(memorySubmissions.values()).find(s => s.id === id || s._id === id);
-    if (mem) {
-      mem.status = 'rejected';
-      mem.rejection_reason = rejectionReason.trim();
-      mem.rejected_by = adminName;
-      mem.rejected_at = timestamp;
-      mem.officer_remarks = `Rejected: ${rejectionReason.trim()}`;
-      if (!updated) updated = mem;
+    // Synchronize verification status on User record
+    if (submission.applicant_email) {
+      try {
+        await User.updateOne(
+          { email: submission.applicant_email.toLowerCase() },
+          { $set: { is_verified: false, verification_status: 'rejected' } }
+        );
+      } catch (uErr) {
+        console.warn("User rejection status sync note:", uErr.message);
+      }
+
+      // Dispatch in-app deficiency notification with officer feedback to the applicant
+      try {
+        await notificationService.createNotification({
+          type: 'verification',
+          badge: 'VERIFICATION REJECTED',
+          badge_class: 'bg-rose-50 text-rose-700 border-rose-200',
+          title: `Verification Action Required: Application Rejected by Regulatory Officer`,
+          authority: 'Bureau of Indian Standards • Regulatory Directorate',
+          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          unread: true,
+          impact: 'Compliance Deficiency Notice Issued',
+          description: `Your verification submission for "${submission.company_name}" under ${submission.standard_id} was reviewed by the Regulatory Directorate. Officer Feedback & Rejection Reason: "${rejectionReason.trim()}". Please rectify the statutory deficiencies and resubmit your lab test reports.`,
+          action_primary: { label: 'Review Deficiencies & Rectify →', target: 'compliance' },
+          action_secondary: { label: 'Ask AI How to Rectify', query: `How do I resolve this BIS deficiency: "${rejectionReason.trim()}" under ${submission.standard_id}?` },
+          user_id: submission.applicant_email.toLowerCase().trim()
+        });
+      } catch (notifErr) {
+        console.warn("Applicant rejection notification note:", notifErr.message);
+      }
     }
 
     await this.recordActivity({
@@ -504,6 +622,11 @@ export class AdminService {
     });
 
     return updated;
+  }
+
+  async deleteVerification(id) {
+    if (!isDbConnected()) throw new Error("Database service temporarily unavailable.");
+    return await VerificationSubmission.findOneAndDelete({ $or: [{ _id: id }, { id }] });
   }
 
   // 3. User Management
@@ -530,77 +653,7 @@ export class AdminService {
       } catch (e) {}
     }
 
-    if (!usersList || usersList.length === 0) {
-      // Return curated registered users
-      const fallbackUsers = [
-        {
-          id: "usr-demo-01",
-          email: "demo.manufacturer@example.com",
-          full_name: "Anil Sharma",
-          company_name: "Alpha Stainless Works Ltd.",
-          role: "user",
-          status: "active",
-          sector: "Consumer Goods & Utensils (IS 17803)",
-          enterprise_category: "MSME - Small Enterprise",
-          gstin: "07AAAAA0000A1Z5",
-          created_at: new Date("2026-08-01T09:00:00Z")
-        },
-        {
-          id: "usr-demo-02",
-          email: "v.chauhan@himalayanthermal.com",
-          full_name: "Vikram Chauhan",
-          company_name: "Himalayan Thermal Systems LLP",
-          role: "user",
-          status: "active",
-          sector: "Household Electrical (IS 302-2-21)",
-          enterprise_category: "MSME - Micro Enterprise",
-          gstin: "02AABCH3391K1Z2",
-          created_at: new Date("2026-08-10T11:00:00Z")
-        },
-        {
-          id: "usr-demo-03",
-          email: "sunil@apexfootwear.in",
-          full_name: "Sunil Kulkarni",
-          company_name: "Apex Athletic Footwear India Ltd.",
-          role: "user",
-          status: "active",
-          sector: "Footwear & Sports Goods",
-          enterprise_category: "MSME - Medium Enterprise",
-          gstin: "27AAACA5512B1Z8",
-          created_at: new Date("2026-08-15T14:30:00Z")
-        },
-        {
-          id: "usr-admin-01",
-          email: "director.admin@standards.internal",
-          full_name: "Dr. Rajesh Verma",
-          company_name: "Bureau of Indian Standards",
-          role: "admin",
-          status: "active",
-          sector: "Central Regulatory Directorate",
-          enterprise_category: "Statutory Standards Authority",
-          gstin: "07AAACB2194D1Z5",
-          created_at: new Date("2026-07-01T08:00:00Z")
-        }
-      ];
-
-      usersList = fallbackUsers;
-      if (role && role !== 'ALL') {
-        usersList = usersList.filter(u => u.role.toLowerCase() === role.toLowerCase());
-      }
-      if (status && status !== 'ALL') {
-        usersList = usersList.filter(u => u.status.toLowerCase() === status.toLowerCase());
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        usersList = usersList.filter(u =>
-          (u.full_name || '').toLowerCase().includes(q) ||
-          (u.email || '').toLowerCase().includes(q) ||
-          (u.company_name || '').toLowerCase().includes(q)
-        );
-      }
-    }
-
-    return usersList;
+    return usersList || [];
   }
 
   async updateUserStatus(id, newStatus, adminUser) {
@@ -608,14 +661,41 @@ export class AdminService {
       throw new Error("Status must be either 'active' or 'suspended'.");
     }
 
-    let updated = null;
+    let targetUser = null;
     if (isDbConnected()) {
       try {
-        updated = await User.findByIdAndUpdate(id, {
-          status: newStatus,
-          is_active: newStatus === 'active'
-        }, { new: true }).select('-password');
+        if (mongoose.isValidObjectId(id)) {
+          targetUser = await User.findById(id);
+        }
+        if (!targetUser) {
+          targetUser = await User.findOne({ $or: [{ email: id }, { id: id }] });
+        }
       } catch (e) {}
+    }
+
+    // Safety guardrail: Prevent suspending the active administrator
+    if (
+      id === 'usr-admin-01' ||
+      targetUser?.is_admin ||
+      targetUser?.role === 'admin' ||
+      targetUser?.email === 'director.admin@standards.local' ||
+      targetUser?.email === adminUser?.email ||
+      (adminUser?.id && String(targetUser?._id) === String(adminUser.id))
+    ) {
+      throw new Error("Security Policy: Cannot suspend an active administrative officer account.");
+    }
+
+    let updated = null;
+    if (targetUser) {
+      targetUser.status = newStatus;
+      targetUser.is_active = (newStatus === 'active');
+      await targetUser.save();
+      updated = targetUser;
+    } else if (isDbConnected() && mongoose.isValidObjectId(id)) {
+      updated = await User.findByIdAndUpdate(id, {
+        status: newStatus,
+        is_active: newStatus === 'active'
+      }, { new: true }).select('-password');
     }
 
     const action = newStatus === 'suspended' ? "Admin suspended user" : "Admin activated user";
@@ -632,15 +712,43 @@ export class AdminService {
   }
 
   async softDeleteUser(id, adminUser) {
-    let deletedUser = null;
+    let targetUser = null;
     if (isDbConnected()) {
       try {
-        deletedUser = await User.findByIdAndUpdate(id, {
-          is_deleted: true,
-          status: 'deleted',
-          deleted_at: new Date()
-        }, { new: true });
+        if (mongoose.isValidObjectId(id)) {
+          targetUser = await User.findById(id);
+        }
+        if (!targetUser) {
+          targetUser = await User.findOne({ $or: [{ email: id }, { id: id }] });
+        }
       } catch (e) {}
+    }
+
+    // Safety guardrail: Prevent deleting the active administrator
+    if (
+      id === 'usr-admin-01' ||
+      targetUser?.is_admin ||
+      targetUser?.role === 'admin' ||
+      targetUser?.email === 'director.admin@standards.local' ||
+      targetUser?.email === adminUser?.email ||
+      (adminUser?.id && String(targetUser?._id) === String(adminUser.id))
+    ) {
+      throw new Error("Security Policy: Cannot delete the currently authenticated administrative officer.");
+    }
+
+    let deletedUser = null;
+    if (targetUser) {
+      targetUser.is_deleted = true;
+      targetUser.status = 'deleted';
+      targetUser.deleted_at = new Date();
+      await targetUser.save();
+      deletedUser = targetUser;
+    } else if (isDbConnected() && mongoose.isValidObjectId(id)) {
+      deletedUser = await User.findByIdAndUpdate(id, {
+        is_deleted: true,
+        status: 'deleted',
+        deleted_at: new Date()
+      }, { new: true });
     }
 
     await this.recordActivity({
@@ -659,73 +767,47 @@ export class AdminService {
   async getReports({ search = '', status = 'ALL' } = {}) {
     await this.ensureMongoSeeded();
 
-    let list = [];
-    if (isDbConnected()) {
-      try {
-        const query = {};
-        if (status && status !== 'ALL') {
-          query.status = status.toLowerCase();
-        }
-        if (search) {
-          query.$or = [
-            { target_title: new RegExp(search, 'i') },
-            { reason: new RegExp(search, 'i') },
-            { reporter_name: new RegExp(search, 'i') }
-          ];
-        }
-        list = await Report.find(query).sort({ createdAt: -1 });
-      } catch (e) {}
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
 
-    if (!list || list.length === 0) {
-      list = Array.from(memoryReports.values());
-      if (status && status !== 'ALL') {
-        list = list.filter(r => r.status.toLowerCase() === status.toLowerCase());
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        list = list.filter(r =>
-          (r.target_title || '').toLowerCase().includes(q) ||
-          (r.reason || '').toLowerCase().includes(q) ||
-          (r.reporter_name || '').toLowerCase().includes(q)
-        );
-      }
+    const query = {};
+    if (status && status !== 'ALL') {
+      query.status = status.toLowerCase();
     }
-
-    return list;
+    if (search) {
+      query.$or = [
+        { target_title: new RegExp(search, 'i') },
+        { reason: new RegExp(search, 'i') },
+        { reporter_name: new RegExp(search, 'i') }
+      ];
+    }
+    return await Report.find(query).sort({ createdAt: -1 });
   }
 
   async resolveReport(id, { resolution_notes, action_taken } = {}, adminUser) {
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
+    }
     const timestamp = new Date();
     const adminName = adminUser?.full_name || adminUser?.email || "Chief Compliance Officer";
 
-    let updated = null;
-    if (isDbConnected()) {
-      try {
-        updated = await Report.findOneAndUpdate(
-          { $or: [{ _id: id }, { id }] },
-          {
-            $set: {
-              status: 'resolved',
-              resolution_notes: resolution_notes || 'Resolved by Bureau Compliance cell.',
-              action_taken: action_taken || 'Appropriate statutory remedial action executed.',
-              resolved_by: adminName,
-              resolved_at: timestamp
-            }
-          },
-          { new: true }
-        );
-      } catch (e) {}
-    }
+    const updated = await Report.findOneAndUpdate(
+      { $or: [{ _id: id }, { id }] },
+      {
+        $set: {
+          status: 'resolved',
+          resolution_notes: resolution_notes || 'Resolved by Bureau Compliance cell.',
+          action_taken: action_taken || 'Appropriate statutory remedial action executed.',
+          resolved_by: adminName,
+          resolved_at: timestamp
+        }
+      },
+      { new: true }
+    );
 
-    const mem = memoryReports.get(id) || Array.from(memoryReports.values()).find(r => r.id === id || r._id === id);
-    if (mem) {
-      mem.status = 'resolved';
-      mem.resolution_notes = resolution_notes || 'Resolved by Bureau Compliance cell.';
-      mem.action_taken = action_taken || 'Appropriate statutory remedial action executed.';
-      mem.resolved_by = adminName;
-      mem.resolved_at = timestamp;
-      if (!updated) updated = mem;
+    if (!updated) {
+      throw new Error("Report not found.");
     }
 
     await this.recordActivity({
@@ -741,34 +823,27 @@ export class AdminService {
   }
 
   async dismissReport(id, { notes } = {}, adminUser) {
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
+    }
     const timestamp = new Date();
     const adminName = adminUser?.full_name || adminUser?.email || "Chief Compliance Officer";
 
-    let updated = null;
-    if (isDbConnected()) {
-      try {
-        updated = await Report.findOneAndUpdate(
-          { $or: [{ _id: id }, { id }] },
-          {
-            $set: {
-              status: 'dismissed',
-              resolution_notes: notes || 'Report inspected and dismissed as non-violative.',
-              resolved_by: adminName,
-              resolved_at: timestamp
-            }
-          },
-          { new: true }
-        );
-      } catch (e) {}
-    }
+    const updated = await Report.findOneAndUpdate(
+      { $or: [{ _id: id }, { id }] },
+      {
+        $set: {
+          status: 'dismissed',
+          resolution_notes: notes || 'Report inspected and dismissed as non-violative.',
+          resolved_by: adminName,
+          resolved_at: timestamp
+        }
+      },
+      { new: true }
+    );
 
-    const mem = memoryReports.get(id) || Array.from(memoryReports.values()).find(r => r.id === id || r._id === id);
-    if (mem) {
-      mem.status = 'dismissed';
-      mem.resolution_notes = notes || 'Report inspected and dismissed as non-violative.';
-      mem.resolved_by = adminName;
-      mem.resolved_at = timestamp;
-      if (!updated) updated = mem;
+    if (!updated) {
+      throw new Error("Report not found.");
     }
 
     await this.recordActivity({
@@ -786,49 +861,131 @@ export class AdminService {
   // 5. Activity Logs
   async getActivityLogs({ limit = 50, target_type = 'ALL' } = {}) {
     await this.ensureMongoSeeded();
-
-    let logs = [];
-    if (isDbConnected()) {
-      try {
-        const query = {};
-        if (target_type && target_type !== 'ALL') {
-          query.target_type = target_type.toLowerCase();
-        }
-        logs = await ActivityLog.find(query).sort({ timestamp: -1 }).limit(Number(limit));
-      } catch (e) {}
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
 
-    if (!logs || logs.length === 0) {
-      logs = [...memoryActivities];
-      if (target_type && target_type !== 'ALL') {
-        logs = logs.filter(a => a.target_type === target_type.toLowerCase());
-      }
-      logs = logs.slice(0, Number(limit));
+    const query = {};
+    if (target_type && target_type !== 'ALL') {
+      query.target_type = target_type.toLowerCase();
     }
-
-    return logs;
+    return await ActivityLog.find(query).sort({ timestamp: -1 }).limit(Number(limit));
   }
 
-  // 6. Content Management (Standards & Notifications metadata)
+  // 6. Content Management (Standards & Licences from MongoDB)
   async getContentItems() {
+    await this.ensureMongoSeeded();
+    let standardsCount = 24;
+    let qcoCount = 8;
+    let licencesCount = 11;
+    let sectorGroups = [];
+
+    if (isDbConnected()) {
+      try {
+        const [sCount, qCount, lCount, allStds] = await Promise.all([
+          Standard.countDocuments({ active: true }),
+          Standard.countDocuments({ is_qco_mandatory: true, active: true }),
+          Licence.countDocuments({ status: 'OPERATIVE' }),
+          Standard.find({ active: true }).sort({ sector: 1, standard_id: 1 })
+        ]);
+
+        if (sCount > 0) standardsCount = sCount;
+        if (qCount > 0) qcoCount = qCount;
+        if (lCount > 0) licencesCount = lCount;
+
+        // Dynamically group standards by sector
+        const grouped = {};
+        allStds.forEach(std => {
+          const sec = std.sector || 'General Standards';
+          if (!grouped[sec]) grouped[sec] = [];
+          grouped[sec].push({
+            id: std.standard_id,
+            title: std.title,
+            qco: std.is_qco_mandatory,
+            year: std.year,
+            effective_date: std.effective_date
+          });
+        });
+
+        sectorGroups = Object.keys(grouped).map(title => ({
+          title,
+          count: grouped[title].length,
+          standards: grouped[title]
+        }));
+      } catch (e) {
+        console.warn("Content items query note:", e.message);
+      }
+    }
+
     return {
-      indexed_standards: 24,
-      qco_advisories_count: 8,
-      categories: [
-        "Consumer Goods & Utensils",
-        "Household Electrical",
-        "Footwear & Sports Goods",
-        "Public Health & Water",
-        "Automotive Safety",
-        "Medical & Healthcare Devices",
-        "Electronics & Energy",
-        "Building Materials"
+      indexed_standards: standardsCount,
+      qco_advisories_count: qcoCount,
+      registered_licences_count: licencesCount,
+      sector_groups: sectorGroups.length > 0 ? sectorGroups : [
+        {
+          title: "Consumer Goods & Kitchen Utensils",
+          count: 4,
+          standards: [
+            { id: "IS 2347:2017", title: "Pressure Cookers", qco: true },
+            { id: "IS 17803:2022", title: "Vacuum Flasks", qco: true },
+            { id: "IS 17526:2021", title: "Single-Walled Bottles", qco: true }
+          ]
+        },
+        {
+          title: "Household Electrical Safety",
+          count: 5,
+          standards: [
+            { id: "IS 302 (Part 2/Sec 21):2024", title: "Geysers", qco: true },
+            { id: "IS 302-2-15:2009", title: "Electric Kettles", qco: true },
+            { id: "IS 1293:2019", title: "Plugs & Sockets", qco: true }
+          ]
+        },
+        {
+          title: "Footwear & Sports Goods",
+          count: 3,
+          standards: [
+            { id: "IS 15844 (Part 1):2023", title: "Sports Footwear", qco: true },
+            { id: "IS 15844 (Part 3):2024", title: "Leather Footwear", qco: true }
+          ]
+        },
+        {
+          title: "Public Health, Food & Water",
+          count: 4,
+          standards: [
+            { id: "IS 10500:2012", title: "Drinking Water", qco: true },
+            { id: "IS 14543:2004", title: "Packaged Water", qco: true },
+            { id: "IS 15410:2003", title: "Containers", qco: true }
+          ]
+        },
+        {
+          title: "Automotive Safety & Helmets",
+          count: 2,
+          standards: [
+            { id: "IS 4151:2015", title: "Two Wheeler Helmets", qco: true },
+            { id: "IS 3196:2013", title: "LPG Cylinders", qco: true }
+          ]
+        },
+        {
+          title: "Medical & Healthcare Devices",
+          count: 2,
+          standards: [
+            { id: "IS 18266:2023", title: "Respirators", qco: true },
+            { id: "IS 80601-2-30:2018", title: "Sphygmomanometers", qco: true }
+          ]
+        }
       ]
     };
   }
 
   // 7. System Settings
   async getSettings() {
+    await this.ensureMongoSeeded();
+    if (isDbConnected()) {
+      try {
+        const found = await SystemSettings.findOne();
+        if (found) return found;
+      } catch (e) {}
+    }
     return {
       system_name: "Bureau of Indian Standards — Compliance Control Gateway",
       version: "2.0.0",
@@ -836,8 +993,45 @@ export class AdminService {
       rag_gateway_url: "http://127.0.0.1:8000",
       auto_cml_issuance: true,
       require_dual_signoff: false,
-      log_retention_days: 90
+      high_risk_categories: ["Household Electrical", "Chemical", "Medical & Healthcare Devices", "Automotive Safety"],
+      log_retention_days: 90,
+      last_saved_by: "Dr. Rajesh Verma",
+      last_saved_at: new Date()
     };
+  }
+
+  async saveSettings(newSettings, adminUser) {
+    const adminName = adminUser?.full_name || adminUser?.email || "Chief Compliance Officer";
+    const payload = {
+      system_name: newSettings.system_name || "Bureau of Indian Standards — Compliance Control Gateway",
+      qco_enforcement_mode: newSettings.qco_enforcement_mode || "Strict Gazette Mandatory",
+      auto_cml_issuance: Boolean(newSettings.auto_cml_issuance),
+      require_dual_signoff: Boolean(newSettings.require_dual_signoff),
+      log_retention_days: Number(newSettings.log_retention_days) || 90,
+      high_risk_categories: newSettings.high_risk_categories || ["Household Electrical", "Chemical", "Medical & Healthcare Devices", "Automotive Safety"],
+      last_saved_by: adminName,
+      last_saved_at: new Date()
+    };
+
+    let updated = null;
+    if (isDbConnected()) {
+      try {
+        updated = await SystemSettings.findOneAndUpdate({}, { $set: payload }, { upsert: true, new: true });
+      } catch (e) {
+        console.warn("Save settings MongoDB note:", e.message);
+      }
+    }
+
+    await this.recordActivity({
+      action: "Admin updated system settings",
+      adminUser,
+      targetType: "settings",
+      targetId: "system-settings",
+      targetTitle: payload.system_name,
+      details: payload
+    });
+
+    return updated || payload;
   }
 }
 

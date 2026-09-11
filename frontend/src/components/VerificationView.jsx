@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Search, CheckCircle2, XCircle, AlertTriangle, FileText, Download, Building2, MapPin, Calendar, Award, ExternalLink, Info, Lock, Globe, Zap, Droplet, Sun, ToyBrick, RefreshCw, X } from 'lucide-react';
-import { verifyISILicense } from '../services/api';
+import { ShieldCheck, Search, CheckCircle2, XCircle, AlertTriangle, FileText, Download, Building2, MapPin, Calendar, Award, ExternalLink, Info, Lock, Globe, Zap, Droplet, Sun, ToyBrick, RefreshCw, X, Stamp, ArrowRight } from 'lucide-react';
+import { verifyISILicense, getUserSubmissionStatus } from '../services/api';
 
 const SAMPLE_LICENCES = [
   { label: 'Bajaj Electricals (IS 302-2-15)', number: 'CM/L-7128394', icon: '⚡' },
@@ -10,11 +10,18 @@ const SAMPLE_LICENCES = [
   { label: 'Tata Solar PV (IS 14286)', number: 'CM/L-9182304', icon: '☀️' }
 ];
 
-export default function VerificationView({ onOpenEvidence }) {
+export default function VerificationView({ onOpenEvidence, onNavigate }) {
   const [cmlNumber, setCmlNumber] = useState('CM/L-7128394');
   const [loading, setLoading] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
   const [error, setError] = useState(null);
+  const [mySubmission, setMySubmission] = useState(null);
+
+  useEffect(() => {
+    getUserSubmissionStatus().then(sub => {
+      if (sub) setMySubmission(sub);
+    });
+  }, []);
 
   const handleVerify = async (queryNum = cmlNumber) => {
     if (!queryNum.trim()) return;
@@ -119,6 +126,101 @@ export default function VerificationView({ onOpenEvidence }) {
 
           </div>
         </div>
+
+        {/* ========================================================================= */}
+        {/* 1.5 MY ORGANIZATION VERIFICATION STATUS BANNER                             */}
+        {/* ========================================================================= */}
+        {mySubmission && (
+          <div className={`rounded-3xl border p-6 sm:p-7 shadow-sm transition-all space-y-4 ${
+            mySubmission.status === 'verified'
+              ? 'bg-emerald-50/60 border-emerald-200'
+              : mySubmission.status === 'rejected'
+              ? 'bg-rose-50/60 border-rose-200'
+              : 'bg-blue-50/60 border-blue-200'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                    mySubmission.status === 'verified'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : mySubmission.status === 'rejected'
+                      ? 'bg-rose-100 text-rose-800 border-rose-300'
+                      : 'bg-blue-100 text-blue-800 border-blue-300'
+                  }`}>
+                    {mySubmission.status === 'verified'
+                      ? '✓ LICENCE ACTIVE & CERTIFIED'
+                      : mySubmission.status === 'rejected'
+                      ? '✕ ACTION REQUIRED: DEFICIENCIES IDENTIFIED'
+                      : '⏳ VERIFICATION UNDER REGULATORY REVIEW'}
+                  </span>
+                  <span className="text-xs text-slate-500 font-semibold">
+                    Submitted: {mySubmission.submitted_at ? new Date(mySubmission.submitted_at).toLocaleDateString() : 'Recent'}
+                  </span>
+                </div>
+
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                  {mySubmission.company_name}
+                </h2>
+                <p className="text-xs text-slate-600 font-medium">
+                  Applicable Standard: <span className="font-mono font-bold text-slate-900">{mySubmission.standard_id}</span> ({mySubmission.standard_title || 'Mandatory Indian Standard'})
+                </p>
+              </div>
+
+              {mySubmission.cml_license && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCmlNumber(mySubmission.cml_license);
+                      handleVerify(mySubmission.cml_license);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Stamp size={14} />
+                    <span>Verify My Licence ({mySubmission.cml_license})</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* If Rejected: Show Officer Feedback prominently */}
+            {mySubmission.status === 'rejected' && (
+              <div className="p-4 rounded-2xl bg-white/90 border border-rose-200 text-xs space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                  <AlertTriangle size={15} className="text-rose-600" />
+                  <span>Statutory Officer Feedback & Rejection Reason:</span>
+                </div>
+                <p className="font-mono text-[11px] text-rose-900 bg-rose-50/70 p-3 rounded-xl border border-rose-200 leading-relaxed font-semibold">
+                  "{mySubmission.rejection_reason || mySubmission.officer_remarks || 'Deficiencies identified in submitted evidence.'}"
+                </p>
+                <div className="pt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onNavigate && onNavigate('compliance')}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <span>Rectify Compliance Gaps & Resubmit</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* If Verified: Show Success Details */}
+            {mySubmission.status === 'verified' && (
+              <div className="p-4 rounded-2xl bg-white/90 border border-emerald-200 text-xs space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                  <CheckCircle2 size={15} className="text-emerald-600" />
+                  <span>Officer Signoff Complete:</span>
+                </div>
+                <p className="text-[11px] text-emerald-900 leading-relaxed">
+                  {mySubmission.officer_remarks || `Application approved. Statutory ISI Licence ${mySubmission.cml_license || ''} granted. Authorized to use the standard ISI Mark on all manufactured products.`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ========================================================================= */}
         {/* 2. SEARCH INPUT CARD & QUICK SAMPLES                                      */}

@@ -3,27 +3,55 @@ import { env } from './env.js';
 
 let isConnected = false;
 let mongodInstance = null;
-let fallbackMode = false;
 
 export async function connectDB() {
   if (isConnected && mongoose.connection.readyState === 1) return;
 
   try {
-    // Attempt connection to configured MONGO_URI with short timeout
+    // Attempt connection to configured MONGO_URI
+    const timeout = env.NODE_ENV === 'production' ? 10000 : 2500;
     const conn = await mongoose.connect(env.MONGO_URI, {
-      serverSelectionTimeoutMS: 1500,
-      connectTimeoutMS: 1500,
+      serverSelectionTimeoutMS: timeout,
+      connectTimeoutMS: timeout,
     });
     isConnected = true;
     console.log(`✅ MongoDB connected successfully: ${conn.connection.host}`);
     return;
   } catch (error) {
+    if (env.NODE_ENV === 'production') {
+      console.error(`❌ FATAL: Production MongoDB connection to ${env.MONGO_URI} failed: ${error.message}`);
+      throw new Error(`MongoDB connection failed: ${error.message}`);
+    }
     console.warn(`⚠️  External MongoDB at ${env.MONGO_URI} is offline (${error.message}).`);
   }
 
-  // Fast-boot embedded engine without blocking startup indefinitely
+  // Development / Local Hackathon Only: Fast-boot embedded engine
   try {
-    const memoryPromise = (async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const dbStorePath = path.resolve(__dirname, '../../data/db_store');
+
+    if (!fs.existsSync(dbStorePath)) {
+      fs.mkdirSync(dbStorePath, { recursive: true });
+    }
+
+    const { MongoMemoryServer } = await import('mongodb-memory-server');
+    mongodInstance = await MongoMemoryServer.create({
+      instance: {
+        dbName: 'bis_sahayak',
+        dbPath: dbStorePath,
+        storageEngine: 'wiredTiger'
+      }
+    });
+    const uri = mongodInstance.getUri();
+    await mongoose.connect(uri);
+    isConnected = true;
+    console.log(`✅ Embedded Persistent MongoDB Engine active at: ${dbStorePath}`);
+  } catch (memError) {
+    try {
       const { MongoMemoryServer } = await import('mongodb-memory-server');
       mongodInstance = await MongoMemoryServer.create({
         instance: { dbName: 'bis_sahayak' }
@@ -32,27 +60,21 @@ export async function connectDB() {
       await mongoose.connect(uri);
       isConnected = true;
       console.log(`✅ Embedded In-Memory MongoDB connected.`);
-    })();
-
-    // Timeout embedded startup after 2 seconds to ensure instant server startup
-    await Promise.race([
-      memoryPromise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout starting embedded MongoDB")), 2000))
-    ]);
-  } catch (memError) {
-    fallbackMode = true;
-    console.log(`⚡ Autonomous Local Memory Active: Server booted instantly in resilient standalone mode.`);
+    } catch (finalErr) {
+      console.error("❌ Fatal: Could not initialize database:", finalErr.message);
+      throw new Error(`Failed to initialize database: ${finalErr.message}`);
+    }
   }
 }
 
 export function isDbConnected() {
-  return isConnected || mongoose.connection.readyState === 1 || fallbackMode;
+  return mongoose.connection.readyState === 1;
 }
 
 export function getDbInfo() {
   return {
     connected: isDbConnected(),
-    type: mongodInstance ? 'Embedded MongoDB Engine' : (fallbackMode ? 'Autonomous Standalone Memory' : 'MongoDB Server'),
+    type: mongodInstance ? 'Embedded MongoDB Engine' : 'MongoDB Server',
     host: mongoose.connection.host || 'localhost',
     name: mongoose.connection.name || 'bis_sahayak'
   };

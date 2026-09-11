@@ -215,6 +215,7 @@ export default function App() {
           {activeTab === 'verification' && (
             <VerificationView
               onOpenEvidence={handleOpenEvidence}
+              onNavigate={handleTabChange}
             />
           )}
 

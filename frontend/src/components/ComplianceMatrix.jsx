@@ -1,5 +1,6 @@
-import React from 'react';
-import { CheckCircle2, AlertTriangle, XCircle, Shield, FileCheck, ArrowRight, Download, Sparkles, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, AlertTriangle, XCircle, Shield, FileCheck, ArrowRight, Download, Sparkles, Upload, Send, ShieldCheck, X, RefreshCw } from 'lucide-react';
+import { submitVerificationDossier } from '../services/api';
 
 export default function ComplianceMatrix({
   complianceData,
@@ -7,6 +8,16 @@ export default function ComplianceMatrix({
   onUploadDoc,
   onDownloadPDF
 }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null);
+  const [applicantForm, setApplicantForm] = useState({
+    applicant_name: "Aditi Sharma",
+    applicant_email: "aditi.sharma@enterprise.in",
+    company_name: "Apex Pressure Cookers Pvt. Ltd.",
+    category: "Consumer Goods & Utensils"
+  });
+
   if (!complianceData || !complianceData.matrix) return null;
 
   const {
@@ -22,6 +33,33 @@ export default function ComplianceMatrix({
     matrix = [],
     next_best_action
   } = complianceData;
+
+  const handleSubmitDossier = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setSubmitResult(null);
+    try {
+      const res = await submitVerificationDossier({
+        ...applicantForm,
+        standard_id,
+        product_name: product_name || standard_title,
+        compliance_score: compliance_readiness_score,
+        requirements: matrix
+      });
+      setSubmitResult({
+        success: true,
+        message: "Dossier formally submitted to Bureau of Indian Standards!",
+        ref_id: res.submission?.application_number || res.submission?._id || "BIS-APP-REG"
+      });
+    } catch (err) {
+      setSubmitResult({
+        success: false,
+        message: err.message || "Failed to submit verification dossier."
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -132,6 +170,17 @@ export default function ComplianceMatrix({
                 <span>Export PDF</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                setSubmitResult(null);
+                setModalOpen(true);
+              }}
+              className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-md cursor-pointer"
+            >
+              <Send size={14} />
+              <span>Submit for BIS Verification</span>
+            </button>
           </div>
         </div>
       )}
@@ -212,6 +261,127 @@ export default function ComplianceMatrix({
           </table>
         </div>
       </div>
+      {/* Verification Submission Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-[#0d1424] border border-slate-700 rounded-3xl max-w-lg w-full p-6 space-y-5 text-white shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="text-emerald-400" size={20} />
+                <h3 className="font-bold text-sm">Submit Dossier to Bureau of Indian Standards</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {submitResult?.success ? (
+              <div className="space-y-4 py-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
+                  <CheckCircle2 size={28} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-base text-white">Verification Dossier Submitted!</h4>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Application Reference: <b className="font-mono text-emerald-400">{submitResult.ref_id}</b>
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto">
+                    Your conformity packet has been routed to the BIS Verification Queue. The administrative dashboard metrics have been updated in real-time.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer"
+                >
+                  Close & Continue
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitDossier} className="space-y-4 text-xs">
+                {submitResult?.success === false && (
+                  <div className="p-3 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-2">
+                    <AlertTriangle size={16} />
+                    <span>{submitResult.message}</span>
+                  </div>
+                )}
+
+                <div className="p-3 rounded-xl bg-[#090e1c] border border-slate-800 space-y-1">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Standard Mandate</span>
+                  <p className="font-bold text-slate-200">{standard_id} — {standard_title}</p>
+                  <p className="text-[11px] text-emerald-400">Readiness Score: {compliance_readiness_score}% ({completed_count} verified clauses)</p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-300">Applicant / Authorised Officer Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={applicantForm.applicant_name}
+                    onChange={e => setApplicantForm({ ...applicantForm, applicant_name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#090e1c] border border-slate-700 text-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-300">Manufacturing Enterprise / Company</label>
+                  <input
+                    type="text"
+                    required
+                    value={applicantForm.company_name}
+                    onChange={e => setApplicantForm({ ...applicantForm, company_name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#090e1c] border border-slate-700 text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-300">Official Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={applicantForm.applicant_email}
+                      onChange={e => setApplicantForm({ ...applicantForm, applicant_email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-[#090e1c] border border-slate-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-300">Industry Sector</label>
+                    <input
+                      type="text"
+                      value={applicantForm.category}
+                      onChange={e => setApplicantForm({ ...applicantForm, category: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-[#090e1c] border border-slate-700 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold flex items-center gap-2 cursor-pointer"
+                  >
+                    {submitting ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                    <span>{submitting ? "Submitting..." : "Confirm & Submit"}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

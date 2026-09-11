@@ -106,3 +106,22 @@ export const getDocumentById = async (req, res) => {
     return sendError(res, err.message, 500);
   }
 };
+
+export const downloadDocument = async (req, res) => {
+  try {
+    const doc = await documentService.getDocumentById(req.params.id);
+    if (!doc) return sendError(res, "Document not found", 404);
+
+    if (doc.file_data) {
+      const buffer = Buffer.from(doc.file_data, 'base64');
+      res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `inline; filename="${doc.original_name || 'document.pdf'}"`);
+      return res.send(buffer);
+    } else if (doc.file_path && fs.existsSync(doc.file_path)) {
+      return res.sendFile(doc.file_path);
+    }
+    return sendError(res, "File payload not found", 404);
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};

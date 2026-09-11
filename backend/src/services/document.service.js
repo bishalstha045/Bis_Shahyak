@@ -1,15 +1,28 @@
+import fs from 'fs';
 import { Document } from '../models/Document.js';
 import { isDbConnected } from '../config/db.js';
 
-const memoryDocs = [];
-
 export class DocumentService {
   async saveDocumentRecord({ userId, file, standardId, analysisResults = null }) {
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
+    }
+
+    let fileBase64 = null;
+    if (file && file.path && fs.existsSync(file.path)) {
+      try {
+        fileBase64 = fs.readFileSync(file.path).toString('base64');
+      } catch (readErr) {
+        console.warn("Could not encode file to base64:", readErr.message);
+      }
+    }
+
     const docData = {
       user_id: userId || 'anonymous',
       file_name: file ? file.filename : 'direct_input.txt',
       original_name: file ? file.originalname : 'direct_input.txt',
       file_path: file ? file.path : null,
+      file_data: fileBase64,
       mime_type: file ? file.mimetype : 'text/plain',
       size_bytes: file ? file.size : 0,
       standard_id: standardId || (analysisResults?.standard_id || 'IS 17803:2022'),
@@ -20,27 +33,21 @@ export class DocumentService {
       action_required: analysisResults?.action_required || {}
     };
 
-    if (isDbConnected()) {
-      return await Document.create(docData);
-    } else {
-      const record = { id: 'doc-' + Date.now(), ...docData, created_at: new Date().toISOString() };
-      memoryDocs.unshift(record);
-      return record;
-    }
+    return await Document.create(docData);
   }
 
   async getUserDocuments(userId) {
-    if (isDbConnected()) {
-      return await Document.find({ user_id: userId }).sort({ createdAt: -1 });
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
-    return memoryDocs.filter(d => d.user_id === userId || d.user_id === 'anonymous');
+    return await Document.find({ user_id: userId }).select('-file_data').sort({ createdAt: -1 });
   }
 
   async getDocumentById(id) {
-    if (isDbConnected()) {
-      return await Document.findById(id);
+    if (!isDbConnected()) {
+      throw new Error("Database service temporarily unavailable.");
     }
-    return memoryDocs.find(d => d.id === id);
+    return await Document.findById(id);
   }
 }
 

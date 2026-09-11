@@ -206,6 +206,40 @@ export default function AdminVerification() {
         </button>
       </div>
 
+      {/* Quick Status Filter Tabs with Counts */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {[
+          { id: 'ALL', label: 'All Dossiers' },
+          { id: 'pending', label: 'Pending Review' },
+          { id: 'under_review', label: 'Under Review' },
+          { id: 'verified', label: 'Verified' },
+          { id: 'rejected', label: 'Rejected' },
+        ].map(tab => {
+          const count = tab.id === 'ALL'
+            ? submissions.length
+            : submissions.filter(s => s.status === tab.id).length;
+          const isActive = statusFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+                isActive
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'bg-[#0d1424] text-slate-400 hover:text-slate-200 border border-slate-800'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Search & Filter Bar */}
       <div className="p-4 rounded-2xl bg-[#0d1424] border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
         <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center gap-2">

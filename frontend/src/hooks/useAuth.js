@@ -131,9 +131,7 @@ export function useAuth() {
           mobile_number: userObj.mobile_number || '',
           role: userObj.role || 'Manufacturer'
         }, { onConflict: 'id' });
-      } catch (e) {
-        // Table might be pending SQL execution in Supabase dashboard
-      }
+      } catch (e) {}
 
       // 2. Check & upsert organization with duplicate protection
       if (orgDetails?.company_name) {
@@ -144,13 +142,31 @@ export function useAuth() {
             enterprise_category: orgDetails.enterprise_category || 'MSME - Small Enterprise',
             primary_sector: orgDetails.sector || 'Consumer Goods & Utensils (IS 17803)'
           }, { onConflict: 'user_id' });
-        } catch (e) {
-          // Table might be pending SQL execution
-        }
+        } catch (e) {}
       }
     } catch (err) {
       console.warn("Database sync note:", err.message);
     }
+  }, []);
+
+  const syncWithBackend = useCallback(async (supabaseSession, additionalData = {}) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseSession.access_token}`
+        },
+        body: JSON.stringify(additionalData)
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+      console.warn("Backend sync failed:", await res.text());
+    } catch (err) {
+      console.warn("Backend sync error:", err);
+    }
+    return null;
   }, []);
 
   // Initialize and listen to Supabase Auth State
@@ -206,12 +222,26 @@ export function useAuth() {
 
           if (isVerified) {
             // Verified and complete
-            setUser(formatted);
-            setToken(session.access_token);
+            // Sync with backend Express to get the backend JWT
+            const backendSync = await syncWithBackend(session, {
+              email: formatted.email,
+              full_name: formatted.full_name,
+              company_name: formatted.company_name,
+              role: formatted.role,
+              phone: formatted.phone,
+              sector: formatted.sector,
+              enterprise_category: formatted.enterprise_category
+            });
+
+            const finalUser = backendSync?.user || formatted;
+            const finalToken = backendSync?.access_token || session.access_token;
+
+            setUser(finalUser);
+            setToken(finalToken);
             setAuthState(AUTH_STATES.AUTHENTICATED);
             setNeedsOrgOnboarding(false);
-            localStorage.setItem('bis_user', JSON.stringify(formatted));
-            localStorage.setItem('bis_token', session.access_token);
+            localStorage.setItem('bis_user', JSON.stringify(finalUser));
+            localStorage.setItem('bis_token', finalToken);
             localStorage.removeItem('bis_pending_verification');
             setPendingVerification(null);
           } else if (authUser.email) {
@@ -283,12 +313,26 @@ export function useAuth() {
         }
 
         if (isVerified) {
-          setUser(formatted);
-          setToken(session.access_token);
+          // Check if we need to sync to backend (e.g., auth state change)
+          const backendSync = await syncWithBackend(session, {
+            email: formatted.email,
+            full_name: formatted.full_name,
+            company_name: formatted.company_name,
+            role: formatted.role,
+            phone: formatted.phone,
+            sector: formatted.sector,
+            enterprise_category: formatted.enterprise_category
+          });
+
+          const finalUser = backendSync?.user || formatted;
+          const finalToken = backendSync?.access_token || session.access_token;
+
+          setUser(finalUser);
+          setToken(finalToken);
           setAuthState(AUTH_STATES.AUTHENTICATED);
           setNeedsOrgOnboarding(false);
-          localStorage.setItem('bis_user', JSON.stringify(formatted));
-          localStorage.setItem('bis_token', session.access_token);
+          localStorage.setItem('bis_user', JSON.stringify(finalUser));
+          localStorage.setItem('bis_token', finalToken);
           localStorage.removeItem('bis_pending_verification');
           setPendingVerification(null);
         } else if (authUser.email) {
@@ -361,8 +405,8 @@ export function useAuth() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: cleanEmail, password })
         });
+        const data = await res.json();
         if (res.ok) {
-          const data = await res.json();
           setUser(data.user);
           setToken(data.access_token);
           setAuthState(AUTH_STATES.AUTHENTICATED);
@@ -371,9 +415,13 @@ export function useAuth() {
           localStorage.removeItem('bis_pending_verification');
           setPendingVerification(null);
           return data.user;
+        } else {
+          throw new Error(data.message || "Invalid email or password.");
         }
       } catch (adminErr) {
-        console.warn("Admin backend auth attempt:", adminErr.message);
+        const friendlyMsg = formatAuthError(adminErr);
+        setError(friendlyMsg);
+        throw new Error(friendlyMsg);
       }
     }
 
@@ -407,16 +455,27 @@ export function useAuth() {
       const { profile, org } = await checkDatabaseProfileAndOrg(authUser.id);
       const userObj = formatSupabaseUser(authUser, profile, org);
 
-      setUser(userObj);
-      setToken(data.session?.access_token || null);
+      const backendSync = await syncWithBackend(data.session, {
+        email: userObj.email,
+        full_name: userObj.full_name,
+        company_name: userObj.company_name,
+        role: userObj.role,
+        phone: userObj.phone,
+        sector: userObj.sector,
+        enterprise_category: userObj.enterprise_category
+      });
+
+      const finalUser = backendSync?.user || userObj;
+      const finalToken = backendSync?.access_token || data.session.access_token;
+
+      setUser(finalUser);
+      setToken(finalToken);
       setAuthState(AUTH_STATES.AUTHENTICATED);
-      localStorage.setItem('bis_user', JSON.stringify(userObj));
-      if (data.session?.access_token) {
-        localStorage.setItem('bis_token', data.session.access_token);
-      }
+      localStorage.setItem('bis_user', JSON.stringify(finalUser));
+      localStorage.setItem('bis_token', finalToken);
       localStorage.removeItem('bis_pending_verification');
       setPendingVerification(null);
-      return userObj;
+      return finalUser;
     } catch (err) {
       const friendlyMsg = formatAuthError(err);
       setError(friendlyMsg);
@@ -435,6 +494,26 @@ export function useAuth() {
       const trimmedEmail = email.trim();
       const trimmedName = full_name?.trim() || '';
       const trimmedCompany = company_name?.trim() || 'Registered Enterprise';
+
+      // 1. Immediately register in MongoDB so user and organization appear in Admin Verification queue
+      try {
+        await fetch(`${API_BASE}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: trimmedEmail,
+            password,
+            full_name: trimmedName,
+            company_name: trimmedCompany,
+            role: role || `${enterprise_category || 'MSME'} (${sector || 'General'})`,
+            phone: mobile_number?.trim() || '',
+            enterprise_category: enterprise_category || 'MSME - Small Enterprise',
+            sector: sector || 'Consumer Goods & Utensils'
+          })
+        });
+      } catch (backendErr) {
+        console.warn("Backend registration sync notice:", backendErr.message);
+      }
 
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
@@ -489,19 +568,28 @@ export function useAuth() {
         sector
       });
 
-      setUser(userObj);
-      if (data.session) {
-        setToken(data.session.access_token);
-        localStorage.setItem('bis_token', data.session.access_token);
-      }
-      if (userObj) {
-        localStorage.setItem('bis_user', JSON.stringify(userObj));
-      }
+      const backendSync = await syncWithBackend(data.session, {
+        email: trimmedEmail,
+        full_name: trimmedName,
+        company_name: trimmedCompany,
+        role: `${enterpriseCategory} (${sector})`,
+        phone: mobile_number?.trim() || '',
+        sector: sector,
+        enterprise_category: enterpriseCategory
+      });
+
+      const finalUser = backendSync?.user || userObj;
+      const finalToken = backendSync?.access_token || data.session.access_token;
+
+      setUser(finalUser);
+      setToken(finalToken);
+      localStorage.setItem('bis_token', finalToken);
+      localStorage.setItem('bis_user', JSON.stringify(finalUser));
       setAuthState(AUTH_STATES.AUTHENTICATED);
       localStorage.removeItem('bis_pending_verification');
       setPendingVerification(null);
 
-      return { isVerified: true, user: userObj };
+      return { isVerified: true, user: finalUser };
     } catch (err) {
       const friendlyMsg = formatAuthError(err);
       setError(friendlyMsg);
@@ -534,12 +622,28 @@ export function useAuth() {
           });
         }
 
-        setUser(userObj);
+        const { data: { session } } = await supabase.auth.getSession();
+        const backendSync = await syncWithBackend(session, {
+          email: userObj.email,
+          full_name: userObj.full_name,
+          company_name: userObj.company_name,
+          role: userObj.role,
+          phone: userObj.phone,
+          sector: userObj.sector,
+          enterprise_category: userObj.enterprise_category
+        });
+
+        const finalUser = backendSync?.user || userObj;
+        const finalToken = backendSync?.access_token || session.access_token;
+
+        setUser(finalUser);
+        setToken(finalToken);
         setAuthState(AUTH_STATES.EMAIL_VERIFIED);
-        localStorage.setItem('bis_user', JSON.stringify(userObj));
+        localStorage.setItem('bis_user', JSON.stringify(finalUser));
+        localStorage.setItem('bis_token', finalToken);
         localStorage.removeItem('bis_pending_verification');
         setPendingVerification(null);
-        return { verified: true, user: userObj };
+        return { verified: true, user: finalUser };
       }
 
       return { verified: false, message: "Email has not been verified yet. Please check your inbox." };
@@ -599,11 +703,27 @@ export function useAuth() {
         sector
       });
 
-      setUser(updatedUserObj);
+      const { data: { session } } = await supabase.auth.getSession();
+      const backendSync = await syncWithBackend(session, {
+        email: updatedUserObj.email,
+        full_name: updatedUserObj.full_name,
+        company_name: updatedUserObj.company_name,
+        role: updatedUserObj.role,
+        phone: updatedUserObj.phone,
+        sector: updatedUserObj.sector,
+        enterprise_category: updatedUserObj.enterprise_category
+      });
+
+      const finalUser = backendSync?.user || updatedUserObj;
+      const finalToken = backendSync?.access_token || session.access_token;
+
+      setUser(finalUser);
+      setToken(finalToken);
       setAuthState(AUTH_STATES.AUTHENTICATED);
       setNeedsOrgOnboarding(false);
-      localStorage.setItem('bis_user', JSON.stringify(updatedUserObj));
-      return updatedUserObj;
+      localStorage.setItem('bis_user', JSON.stringify(finalUser));
+      localStorage.setItem('bis_token', finalToken);
+      return finalUser;
     } catch (err) {
       const friendly = formatAuthError(err);
       setError(friendly);
@@ -704,32 +824,14 @@ export function useAuth() {
         localStorage.removeItem('bis_pending_verification');
         setPendingVerification(null);
         return data.user;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to initialize administrator session.");
       }
     } catch (e) {
-      console.warn("Backend admin login:", e);
+      console.error("Backend admin login failed:", e);
+      throw e;
     }
-
-    const adminUser = {
-      id: 'usr-admin-01',
-      email: 'officer@standards.local',
-      full_name: 'Dr. Rajesh Verma',
-      company_name: 'Central Regulatory Authority',
-      role: 'admin',
-      is_admin: true,
-      status: 'active',
-      enterprise_category: 'Statutory Standards Authority',
-      sector: 'Central Regulatory Directorate',
-      is_email_verified: true,
-      has_organization: true
-    };
-    setUser(adminUser);
-    setToken('admin-demo-token-12345');
-    setAuthState(AUTH_STATES.AUTHENTICATED);
-    localStorage.setItem('bis_user', JSON.stringify(adminUser));
-    localStorage.setItem('bis_token', 'admin-demo-token-12345');
-    localStorage.removeItem('bis_pending_verification');
-    setPendingVerification(null);
-    return adminUser;
   };
 
   // 9. Sign Out

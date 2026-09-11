@@ -10,7 +10,19 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: function() {
+      return this.provider === 'local';
+    }
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'supabase'],
+    default: 'local'
+  },
+  supabase_id: {
+    type: String,
+    sparse: true,
+    unique: true
   },
   full_name: {
     type: String,
@@ -41,6 +53,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  udyam_number: {
+    type: String,
+    default: ''
+  },
+  state: {
+    type: String,
+    default: 'Delhi'
+  },
+  district: {
+    type: String,
+    default: 'New Delhi'
+  },
+  factory_address: {
+    type: String,
+    default: ''
+  },
   is_active: {
     type: Boolean,
     default: true
@@ -48,6 +76,15 @@ const userSchema = new mongoose.Schema({
   is_admin: {
     type: Boolean,
     default: false
+  },
+  is_verified: {
+    type: Boolean,
+    default: false
+  },
+  verification_status: {
+    type: String,
+    enum: ['unverified', 'pending', 'verified', 'rejected'],
+    default: 'pending'
   },
   status: {
     type: String,
