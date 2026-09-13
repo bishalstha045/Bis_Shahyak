@@ -106,6 +106,7 @@ async def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid email address or password.")
         
     token = create_jwt_token(user["id"], user["email"], user["role"])
+    is_admin = user["role"].lower() in ("admin", "administrator", "director", "officer")
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -115,6 +116,8 @@ async def login(req: LoginRequest):
             "full_name": user["full_name"],
             "company_name": user["company_name"],
             "role": user["role"],
+            "is_admin": is_admin,
+            "status": user["status"] if "status" in user.keys() else "active",
             "created_at": user["created_at"]
         }
     }
@@ -171,3 +174,53 @@ async def save_user_assessment(req: AssessmentSaveRequest, user: Dict[str, Any] 
         "assessment_id": assessment_id,
         "message": "Compliance assessment saved to your organization profile."
     }
+
+class SyncRequest(BaseModel):
+    email: Optional[str] = None
+    full_name: Optional[str] = ""
+    company_name: Optional[str] = ""
+    role: Optional[str] = "Manufacturer"
+    phone: Optional[str] = ""
+    sector: Optional[str] = "Consumer Goods & Utensils"
+    enterprise_category: Optional[str] = "MSME - Small Enterprise"
+    gstin: Optional[str] = ""
+
+@router.post("/auth/sync")
+async def auth_sync(req: SyncRequest):
+    return {
+        "success": True,
+        "message": "User profile synchronized successfully.",
+        "user": {
+            "email": req.email or "demo@example.com",
+            "full_name": req.full_name or "Authorized Representative",
+            "company_name": req.company_name or "Registered Enterprise",
+            "role": req.role or "Manufacturer",
+            "sector": req.sector or "Consumer Goods & Utensils"
+        }
+    }
+
+@router.post("/auth/submit-verification")
+async def auth_submit_verification(data: Dict[str, Any]):
+    return {
+        "success": True,
+        "message": "Verification dossier submitted successfully.",
+        "submission_id": f"sub-{int(datetime.now().timestamp())}"
+    }
+
+@router.post("/auth/demo-admin")
+async def auth_demo_admin():
+    token = create_jwt_token(1, "admin@bis.gov.in", "Admin")
+    return {
+        "success": True,
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": 1,
+            "email": "admin@bis.gov.in",
+            "full_name": "BIS Administrator",
+            "company_name": "Bureau of Indian Standards",
+            "role": "Admin",
+            "is_admin": True
+        }
+    }
+

@@ -11,11 +11,11 @@ def load_standards_metadata() -> List[Dict[str, Any]]:
             return json.load(f)
     return []
 
-def extract_product_profile(query: str) -> Dict[str, Any]:
+def extract_product_profile(query: Optional[str]) -> Dict[str, Any]:
     """
     Extract product name, category, material, and characteristics from user description.
     """
-    q_lower = query.lower()
+    q_lower = (query or "").lower().strip()
     
     # Defaults
     profile = {
@@ -228,14 +228,14 @@ def extract_product_profile(query: str) -> Dict[str, Any]:
 
     return profile
 
-def match_product_to_standards(query: str) -> Dict[str, Any]:
+def match_product_to_standards(query: Optional[str]) -> Dict[str, Any]:
     """
     Core Product -> Applicable BIS Standards Mapper with explainability and clause evidence.
     """
     standards = load_standards_metadata()
     profile = extract_product_profile(query)
     
-    q_lower = query.lower()
+    q_lower = (query or "").lower().strip()
     candidate_standards = []
     
     for std in standards:

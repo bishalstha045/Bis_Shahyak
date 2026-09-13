@@ -128,7 +128,7 @@ export class NotificationService {
     if (!isDbConnected()) {
       throw new Error("Database service temporarily unavailable.");
     }
-    return await Notification.findOneAndUpdate({ id }, { unread: false }, { new: true });
+    return await Notification.findOneAndUpdate({ id }, { unread: false }, { returnDocument: 'after' });
   }
 
   async markAllAsRead(userIdentifier = null) {

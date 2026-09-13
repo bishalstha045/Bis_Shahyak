@@ -1,14 +1,22 @@
-# pyrefly: ignore [missing-import]
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import chat, search, verify, feedback, export, navigator, auth
+from app.routes import chat, search, verify, feedback, export, navigator, auth, voice
 from app.services.retriever import initialize_retriever
 from app.models.database import init_db
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    initialize_retriever()
+    print("BIS Sahayak V2 Backend initialized successfully with 21 standards.")
+    yield
 
 app = FastAPI(
     title="BIS Sahayak V2 API (बीआईएस सहायक)",
     description="AI-Powered BIS Compliance Navigator & Standards Decision Platform — SIH 2026",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -19,21 +27,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Startup hook
-@app.on_event("startup")
-async def startup_event():
-    init_db()
-    initialize_retriever()
-    print("BIS Sahayak V2 Backend initialized successfully with 21 standards.")
-
 # Register API routes
 app.include_router(auth.router, prefix="/api", tags=["Authentication & Profile"])
 app.include_router(navigator.router, prefix="/api", tags=["Compliance Navigator"])
-app.include_router(chat.router, prefix="/api", tags=["Chat & Voice"])
-app.include_router(search.router, prefix="/api", tags=["Search"])
-app.include_router(verify.router, prefix="/api", tags=["Verify"])
+app.include_router(chat.router, prefix="/api", tags=["Chat & Conversational AI"])
+app.include_router(voice.router, prefix="/api", tags=["Voice Input & Multimodal AI"])
+app.include_router(search.router, prefix="/api", tags=["Search & Directory"])
+app.include_router(verify.router, prefix="/api", tags=["License Verification"])
 app.include_router(feedback.router, prefix="/api", tags=["Feedback"])
-app.include_router(export.router, prefix="/api", tags=["Export"])
+app.include_router(export.router, prefix="/api", tags=["PDF Export"])
 
 @app.get("/health")
 async def health():

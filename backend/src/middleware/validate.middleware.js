@@ -101,7 +101,7 @@ export const verifyLicenseSchema = z.object({
 
 export const chatSchema = z.object({
   query: z.string().min(1, "query string is required."),
-  mode: z.enum(["simple", "expert"]).optional().default("simple"),
+  mode: z.enum(["simple", "expert", "gemini", "rag", "auto"]).optional().default("auto"),
   language: z.string().optional().default("auto"),
   sector: z.string().optional().nullable(),
   session_id: z.string().optional().nullable()

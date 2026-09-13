@@ -439,7 +439,7 @@ export class AdminService {
                 officer_remarks: `Preliminary concurrence by ${adminName}. Awaiting secondary regulatory signoff.`
               }
             },
-            { new: true }
+            { returnDocument: 'after' }
           );
         } catch (e) {}
       }
@@ -513,7 +513,7 @@ export class AdminService {
               officer_remarks: `Application verified & approved. ${cmlLicense ? `Statutory ISI Licence ${cmlLicense} granted.` : 'Licence pending manual issuance.'}`
             }
           },
-          { new: true }
+          { returnDocument: 'after' }
         );
       } catch (e) {}
     }
@@ -595,7 +595,7 @@ export class AdminService {
           officer_remarks: `Rejected: ${rejectionReason.trim()}`
         }
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
@@ -717,7 +717,7 @@ export class AdminService {
       updated = await User.findByIdAndUpdate(id, {
         status: newStatus,
         is_active: newStatus === 'active'
-      }, { new: true }).select('-password');
+      }, { returnDocument: 'after' }).select('-password');
     }
 
     const action = newStatus === 'suspended' ? "Admin suspended user" : "Admin activated user";
@@ -770,7 +770,7 @@ export class AdminService {
         is_deleted: true,
         status: 'deleted',
         deleted_at: new Date()
-      }, { new: true });
+      }, { returnDocument: 'after' });
     }
 
     await this.recordActivity({
@@ -825,7 +825,7 @@ export class AdminService {
           resolved_at: timestamp
         }
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
@@ -861,7 +861,7 @@ export class AdminService {
           resolved_at: timestamp
         }
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
@@ -1038,7 +1038,7 @@ export class AdminService {
     let updated = null;
     if (isDbConnected()) {
       try {
-        updated = await SystemSettings.findOneAndUpdate({}, { $set: payload }, { upsert: true, new: true });
+        updated = await SystemSettings.findOneAndUpdate({}, { $set: payload }, { upsert: true, returnDocument: 'after' });
       } catch (e) {
         console.warn("Save settings MongoDB note:", e.message);
       }

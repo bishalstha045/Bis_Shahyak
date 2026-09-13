@@ -82,19 +82,10 @@ def evaluate_compliance(
             status = u_stat
             evidence_desc = u_ev_text
         else:
-            # Default benchmark distribution: First 1 or 2 items assumed complete for product profile match, rest missing/needs review
-            if i == 0:
-                status = "Complete"
-                evidence_desc = f"Raw Material Mill Test Certificate ({product_profile.get('material', 'Standard Grade')})"
-                completed_count += 1
-            elif i == 1:
-                status = "Needs Review"
-                evidence_desc = f"In-house test observation sheet (Pending NABL endorsement)"
-                review_count += 1
-            else:
-                status = "Missing"
-                evidence_desc = "—"
-                missing_count += 1
+            # Genuine evidence-grounded assessment: No fabricated completions
+            status = "Missing"
+            evidence_desc = "Pending Test Report / Lab Certificate"
+            missing_count += 1
                 
         matrix.append({
             "clause_id": cid,

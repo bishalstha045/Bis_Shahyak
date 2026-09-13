@@ -11,7 +11,7 @@ export class ChatService {
     await Conversation.findOneAndUpdate(
       { session_id: sessionId },
       { session_id: sessionId, user_id: userId, language, mode },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     return await Message.create({

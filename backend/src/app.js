@@ -14,6 +14,7 @@ import ragRoutes from './routes/rag.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import submissionRoutes from './routes/submission.routes.js';
 import reportRoutes from './routes/report.routes.js';
+import voiceRoutes from './routes/voice.routes.js';
 
 import { healthCheck } from './controllers/rag.controller.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
@@ -77,6 +78,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/verification/submissions', submissionRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/voice', voiceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', ragRoutes); // Product mapping, compliance, verifier, pdf export
 

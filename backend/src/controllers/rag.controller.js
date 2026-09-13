@@ -1,6 +1,9 @@
 import { ragService } from '../services/rag.service.js';
+import { externalApiService } from '../services/api.service.js';
 import { getDbInfo } from '../config/db.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { HsCode } from '../models/HsCode.js';
+import { normalizeHsCode } from '../utils/hs_helper.js';
 
 export const healthCheck = async (req, res) => {
   const ragStatus = await ragService.checkHealth();
@@ -124,3 +127,169 @@ export const submitFeedback = async (req, res) => {
     return sendError(res, err.message, 500);
   }
 };
+
+export const translateText = async (req, res) => {
+  try {
+    const { text, source_lang, source_language, target_lang, target_language } = req.body;
+    const sLang = source_lang || source_language || 'en';
+    const tLang = target_lang || target_language || 'hi';
+    if (!text) {
+      return sendError(res, "text parameter is required.", 400);
+    }
+    const result = await externalApiService.translateIndic(text, sLang, tLang);
+    return res.status(200).json({
+      ...result,
+      translated_text: result.translated
+    });
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+
+export const getStandards = async (req, res) => {
+  try {
+    const standards = ragService.getAllStandards();
+    return res.status(200).json({
+      success: true,
+      count: standards.length,
+      standards
+    });
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+
+export const getStandardById = async (req, res) => {
+  try {
+    const rawParam = (req.params.id || '').trim();
+    if (!rawParam) {
+      return res.status(400).json({ success: false, message: "Standard identifier or HS code is required." });
+    }
+
+    const normalizedHs = normalizeHsCode(rawParam);
+
+    // 1. If input is or normalizes to an HS code, search MongoDB collection hs_codes
+    if (normalizedHs) {
+      const hsDoc = await HsCode.findOne({ hs_code: normalizedHs }).lean();
+      if (hsDoc) {
+        // Also fetch related sub-items under the same 4-digit heading
+        const prefix4 = normalizedHs.slice(0, 4);
+        const related = await HsCode.find({
+          hs_code: { $regex: `^${prefix4}`, $ne: hsDoc.hs_code }
+        }).limit(8).lean();
+
+        return res.status(200).json({
+          success: true,
+          type: 'hs_code',
+          data: {
+            hs_code: hsDoc.hs_code,
+            description: hsDoc.description,
+            related_items: related.map(r => ({ hs_code: r.hs_code, description: r.description }))
+          }
+        });
+      }
+
+      // Check prefix match in MongoDB if exact code not found
+      const prefixMatch = await HsCode.find({
+        hs_code: new RegExp(`^${normalizedHs}`)
+      }).limit(8).lean();
+      if (prefixMatch.length > 0) {
+        return res.status(200).json({
+          success: true,
+          type: 'hs_code',
+          data: {
+            hs_code: prefixMatch[0].hs_code,
+            description: prefixMatch[0].description,
+            related_items: prefixMatch.slice(1).map(r => ({ hs_code: r.hs_code, description: r.description }))
+          }
+        });
+      }
+    }
+
+    // 2. Check if rawParam matches an Indian Standard by ID (e.g. "IS 2347", "2347", "IS 17803")
+    const standard = ragService.getStandardById(rawParam);
+    if (standard) {
+      return res.status(200).json({
+        success: true,
+        type: 'standard',
+        data: standard,
+        standard
+      });
+    }
+
+    // 3. Check MongoDB hs_codes by product description keyword (e.g. "boneless", "horses for polo", "tuna")
+    const escapedParam = rawParam.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    const hsMatches = await HsCode.find({
+      $or: [
+        { hs_code: new RegExp(escapedParam, 'i') },
+        { description: new RegExp(escapedParam, 'i') }
+      ]
+    }).limit(10).lean();
+
+    if (hsMatches.length > 0) {
+      return res.status(200).json({
+        success: true,
+        type: 'hs_code',
+        data: {
+          hs_code: hsMatches[0].hs_code,
+          description: hsMatches[0].description,
+          related_items: hsMatches.slice(1).map(r => ({ hs_code: r.hs_code, description: r.description }))
+        }
+      });
+    }
+
+    // 4. Check Indian Standards by title or applicable products (e.g. "pressure cooker", "water bottle")
+    const allStandards = ragService.getAllStandards();
+    const cleanLower = rawParam.toLowerCase();
+    const matchedStd = allStandards.find(s =>
+      s.title?.toLowerCase().includes(cleanLower) ||
+      s.applicable_products?.some(p => p.toLowerCase().includes(cleanLower)) ||
+      s.sector?.toLowerCase().includes(cleanLower)
+    );
+    if (matchedStd) {
+      return res.status(200).json({
+        success: true,
+        type: 'standard',
+        data: matchedStd,
+        standard: matchedStd
+      });
+    }
+
+    // 5. Not found response
+    return res.status(404).json({
+      success: false,
+      message: "HS Code not found"
+    });
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+
+export const searchStandards = async (req, res) => {
+  try {
+    const query = req.query.q || req.query.query || '';
+    if (!query.trim()) {
+      return sendError(res, "Query parameter 'q' is required for search.", 400);
+    }
+    const sector = req.query.sector || null;
+    const limit = parseInt(req.query.limit || '10', 10);
+    const results = await ragService.searchStandards(query, sector, limit);
+
+    // Also search HSN records if query looks like an HSN code or product
+    const escaped = query.trim().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    const hsnDocs = await HsCode.find({
+      $or: [
+        { hs_code: new RegExp(escaped, 'i') },
+        { description: new RegExp(escaped, 'i') }
+      ]
+    }).limit(limit).lean();
+
+    return res.status(200).json({
+      ...results,
+      hs_codes: hsnDocs.map(d => ({ hs_code: d.hs_code, description: d.description }))
+    });
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+

@@ -8,6 +8,7 @@ const router = Router();
 router.post('/', optionalAuth, createSubmission);
 
 // Get user's own submissions
+router.get('/', optionalAuth, getMySubmissions);
 router.get('/my', optionalAuth, getMySubmissions);
 
 export default router;

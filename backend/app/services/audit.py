@@ -15,8 +15,8 @@ def log_query(query: str, response: Dict[str, Any], status: str = "success", ses
             query,
             response.get("mode", "simple"),
             response.get("language", "en"),
-            float(response.get("confidence", 0)),
-            float(response.get("processing_time", 0.0)),
+            float(response.get("confidence") or 0.0),
+            float(response.get("processing_time") or 0.0),
             status,
             (response.get("answer", "")[:250] + "...") if response.get("answer") else ""
         ))

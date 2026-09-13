@@ -18,14 +18,10 @@ export const uploadAndAnalyze = async (req, res) => {
       }
     }
 
-    // Call RAG document analyzer
+    // Call RAG document analyzer with full file parsing
     let analysisResult = null;
     try {
-      analysisResult = await ragService.analyzeDocument({
-        file_name: file ? file.originalname : 'uploaded_report.pdf',
-        content_text: contentText,
-        standard_id: standard_id || null
-      });
+      analysisResult = await ragService.analyzeDocumentFile(file, standard_id);
     } catch (ragErr) {
       console.warn("RAG analyze warning:", ragErr.message);
       // Clean fallback if RAG parser service is in fallback

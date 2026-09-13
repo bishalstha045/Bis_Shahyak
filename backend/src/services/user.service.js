@@ -15,7 +15,7 @@ export class UserService {
     if (!isDbConnected()) {
       throw new Error("Service temporarily unavailable.");
     }
-    const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
+    const user = await User.findByIdAndUpdate(userId, updateData, { returnDocument: 'after' });
     if (user && (updateData.company_name || updateData.sector || updateData.enterprise_category || updateData.gstin)) {
       try {
         await adminService.createOrUpdateOrgVerification(user);

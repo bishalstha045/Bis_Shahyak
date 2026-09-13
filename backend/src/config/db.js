@@ -25,7 +25,7 @@ export async function connectDB() {
     console.warn(`⚠️  External MongoDB at ${env.MONGO_URI} is offline (${error.message}).`);
   }
 
-  // Development / Local Hackathon Only: Fast-boot embedded engine
+  // Development / Local Hackathon Only: Check active running instance or fast-boot embedded engine
   try {
     const fs = await import('fs');
     const path = await import('path');
@@ -33,6 +33,22 @@ export async function connectDB() {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const dbStorePath = path.resolve(__dirname, '../../data/db_store');
+    const activeUriFile = path.join(dbStorePath, 'active_uri.txt');
+
+    // 1. Check if an active instance URI is saved
+    if (fs.existsSync(activeUriFile)) {
+      const activeUri = fs.readFileSync(activeUriFile, 'utf-8').trim();
+      if (activeUri) {
+        try {
+          await mongoose.connect(activeUri, { serverSelectionTimeoutMS: 2000 });
+          isConnected = true;
+          console.log(`✅ Connected to active MongoDB instance: ${activeUri}`);
+          return;
+        } catch (e) {
+          // Stale active URI, proceed to spin up
+        }
+      }
+    }
 
     if (!fs.existsSync(dbStorePath)) {
       fs.mkdirSync(dbStorePath, { recursive: true });
@@ -49,6 +65,9 @@ export async function connectDB() {
     const uri = mongodInstance.getUri();
     await mongoose.connect(uri);
     isConnected = true;
+    try {
+      fs.writeFileSync(activeUriFile, uri);
+    } catch (e) {}
     console.log(`✅ Embedded Persistent MongoDB Engine active at: ${dbStorePath}`);
   } catch (memError) {
     try {

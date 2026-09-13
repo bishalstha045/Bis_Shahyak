@@ -7,6 +7,7 @@ class ChatRequest(BaseModel):
     language: str = Field(default="auto", description="Target language code (e.g. en, hi, ta, te)")
     sector: Optional[str] = Field(default=None, description="Optional sector filter")
     session_id: Optional[str] = Field(default=None, description="Chat session ID")
+    history: Optional[List[Dict[str, Any]]] = Field(default=None, description="Conversation history for multi-turn context")
 
 class Citation(BaseModel):
     standard_id: str
@@ -14,18 +15,18 @@ class Citation(BaseModel):
     section: str = ""
     page: str = ""
     url: str = ""
-    relevance: int = 80
+    relevance: Optional[int] = 80
     snippet: Optional[str] = None
     clause_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     answer: str
-    confidence: int
+    confidence: Optional[int] = None
     compliance_readiness: Optional[int] = None
-    citations: List[Citation]
-    language: str
-    mode: str
-    processing_time: float
+    citations: List[Citation] = Field(default_factory=list)
+    language: str = "en"
+    mode: str = "general_llm"
+    processing_time: float = 0.1
     session_id: Optional[str] = None
     product_profile: Optional[Dict[str, Any]] = None
     applicable_standards: Optional[List[Dict[str, Any]]] = None
@@ -39,7 +40,8 @@ class FeedbackRequest(BaseModel):
     comment: Optional[str] = None
 
 class VerifyRequest(BaseModel):
-    isi_number: str
+    isi_number: Optional[str] = None
+    cml_number: Optional[str] = None
     product_type: Optional[str] = None
     image_base64: Optional[str] = None
 
@@ -56,6 +58,15 @@ class VerifyResponse(BaseModel):
     details: str
     message: str
     verification_source: str = "BIS Manakonline Official Registry Database"
+    manufacturer: Optional[str] = None
+    standard: Optional[str] = None
+    brand_name: Optional[str] = None
+    factory_address: Optional[str] = None
+    validity_start: Optional[str] = None
+    validity_end: Optional[str] = None
+    grant_date: Optional[str] = None
+    recognized_testing_lab: Optional[str] = None
+    is_qco_mandated: Optional[bool] = True
 
 class ExportRequest(BaseModel):
     product_description: str

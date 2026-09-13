@@ -81,7 +81,9 @@ async def retrieve_documents(query: str, sector: Optional[str] = None) -> List[D
     if not local_chunks_cache:
         initialize_retriever()
         
-    query_clean = query.lower()
+    query_clean = (query or "").lower().strip()
+    if not query_clean:
+        return []
     query_tokens = [w for w in re.findall(r'\w+', query_clean) if w not in STOP_WORDS]
     
     if not query_tokens:
