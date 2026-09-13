@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
+import { setAuthSessionToken } from '../services/api';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -55,43 +56,30 @@ const formatSupabaseUser = (sessionUser, profileData = null, orgData = null) => 
 };
 
 export function useAuth() {
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('bis_user');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.id === 'usr-google-demo' || parsed?.email === 'google.user@gmail.com') {
-          localStorage.removeItem('bis_user');
-          localStorage.removeItem('bis_token');
-          return null;
-        }
-        return parsed;
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  });
-
-  const [token, setToken] = useState(() => {
-    const saved = localStorage.getItem('bis_token');
-    return saved === 'google-demo-token' ? null : saved;
-  });
-
+  // Pure ephemeral state: on refresh or unauthenticated entry, all state is null/unauthenticated (like chat assistant)
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [authState, setAuthState] = useState(AUTH_STATES.UNAUTHENTICATED);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingVerification, setPendingVerification] = useState(null);
 
-  // Pending verification state preserved across refreshes
-  const [pendingVerification, setPendingVerification] = useState(() => {
-    try {
-      const saved = localStorage.getItem('bis_pending_verification');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
+  // Synchronize in-memory auth token with api client
+  useEffect(() => {
+    setAuthSessionToken(token);
+  }, [token]);
+
+  // Purge any stale persistent storage on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('bis_user');
+        localStorage.removeItem('bis_token');
+        localStorage.removeItem('bis_pending_verification');
+      } catch (e) {}
     }
-  });
+  }, []);
 
   // Notice state for Google existing user detected during signup
   const [googleNotice, setGoogleNotice] = useState(null);
@@ -99,54 +87,16 @@ export function useAuth() {
   // Needs onboarding state (e.g. new Google OAuth user who needs organization setup)
   const [needsOrgOnboarding, setNeedsOrgOnboarding] = useState(false);
 
-  // Helper to safely check profile and organization in Supabase database
+  // Helper to check profile and organization
+  // Supabase is used strictly for Auth; user profiles and enterprise details are persisted via MongoDB and Supabase auth user_metadata.
   const checkDatabaseProfileAndOrg = useCallback(async (userId) => {
-    if (!userId) return { profile: null, org: null };
-    try {
-      const [pRes, oRes] = await Promise.allSettled([
-        supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-        supabase.from('organizations').select('*').eq('user_id', userId).maybeSingle()
-      ]);
-
-      const profile = pRes.status === 'fulfilled' && !pRes.value.error ? pRes.value.data : null;
-      const org = oRes.status === 'fulfilled' && !oRes.value.error ? oRes.value.data : null;
-
-      return { profile, org };
-    } catch (err) {
-      // Table may not exist yet in Supabase schema cache; fail gracefully
-      return { profile: null, org: null };
-    }
+    return { profile: null, org: null };
   }, []);
 
   // Helper to safely save or upsert profile & org to database
   const saveProfileAndOrgToDatabase = useCallback(async (userObj, orgDetails) => {
-    if (!userObj?.id) return;
-    try {
-      // 1. Check & upsert profile with duplicate protection
-      try {
-        await supabase.from('profiles').upsert({
-          id: userObj.id,
-          email: userObj.email,
-          full_name: userObj.full_name || 'Authorized Representative',
-          mobile_number: userObj.mobile_number || '',
-          role: userObj.role || 'Manufacturer'
-        }, { onConflict: 'id' });
-      } catch (e) {}
-
-      // 2. Check & upsert organization with duplicate protection
-      if (orgDetails?.company_name) {
-        try {
-          await supabase.from('organizations').upsert({
-            user_id: userObj.id,
-            name: orgDetails.company_name,
-            enterprise_category: orgDetails.enterprise_category || 'MSME - Small Enterprise',
-            primary_sector: orgDetails.sector || 'Consumer Goods & Utensils (IS 17803)'
-          }, { onConflict: 'user_id' });
-        } catch (e) {}
-      }
-    } catch (err) {
-      console.warn("Database sync note:", err.message);
-    }
+    // User profile and organization details are safely persisted in MongoDB via syncWithBackend and in auth metadata via supabase.auth.updateUser.
+    return;
   }, []);
 
   const syncWithBackend = useCallback(async (supabaseSession, additionalData = {}) => {
@@ -173,15 +123,13 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    // Purge any stale demo session if present
-    const saved = localStorage.getItem('bis_user');
-    if (saved && (saved.includes('usr-google-demo') || saved.includes('google.user@gmail.com'))) {
-      localStorage.removeItem('bis_user');
-      localStorage.removeItem('bis_token');
-      if (mounted) {
-        setUser(null);
-        setToken(null);
-      }
+    // Purge any persistent storage on mount to guarantee ephemeral session reset
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('bis_user');
+        localStorage.removeItem('bis_token');
+        localStorage.removeItem('bis_pending_verification');
+      } catch (e) {}
     }
 
     async function initSession() {
@@ -240,8 +188,6 @@ export function useAuth() {
             setToken(finalToken);
             setAuthState(AUTH_STATES.AUTHENTICATED);
             setNeedsOrgOnboarding(false);
-            localStorage.setItem('bis_user', JSON.stringify(finalUser));
-            localStorage.setItem('bis_token', finalToken);
             localStorage.removeItem('bis_pending_verification');
             setPendingVerification(null);
           } else if (authUser.email) {
@@ -252,27 +198,11 @@ export function useAuth() {
               fullName: formatted.full_name,
               companyName: formatted.company_name
             });
-            localStorage.setItem('bis_pending_verification', JSON.stringify({
-              email: authUser.email,
-              fullName: formatted.full_name,
-              companyName: formatted.company_name
-            }));
           } else {
             setAuthState(AUTH_STATES.UNAUTHENTICATED);
           }
         } else if (mounted) {
-          // Check if we have an active pending verification in localStorage
-          const pending = localStorage.getItem('bis_pending_verification');
-          if (pending) {
-            try {
-              setPendingVerification(JSON.parse(pending));
-              setAuthState(AUTH_STATES.EMAIL_VERIFICATION_PENDING);
-            } catch {
-              localStorage.removeItem('bis_pending_verification');
-            }
-          } else {
-            setAuthState(AUTH_STATES.UNAUTHENTICATED);
-          }
+          setAuthState(AUTH_STATES.UNAUTHENTICATED);
         }
       } catch (err) {
         console.warn("Supabase session check:", err.message);
@@ -331,8 +261,6 @@ export function useAuth() {
           setToken(finalToken);
           setAuthState(AUTH_STATES.AUTHENTICATED);
           setNeedsOrgOnboarding(false);
-          localStorage.setItem('bis_user', JSON.stringify(finalUser));
-          localStorage.setItem('bis_token', finalToken);
           localStorage.removeItem('bis_pending_verification');
           setPendingVerification(null);
         } else if (authUser.email) {
@@ -410,8 +338,6 @@ export function useAuth() {
           setUser(data.user);
           setToken(data.access_token);
           setAuthState(AUTH_STATES.AUTHENTICATED);
-          localStorage.setItem('bis_user', JSON.stringify(data.user));
-          localStorage.setItem('bis_token', data.access_token);
           localStorage.removeItem('bis_pending_verification');
           setPendingVerification(null);
           return data.user;
@@ -444,8 +370,6 @@ export function useAuth() {
             setUser(bData.user);
             setToken(bData.access_token);
             setAuthState(AUTH_STATES.AUTHENTICATED);
-            localStorage.setItem('bis_user', JSON.stringify(bData.user));
-            localStorage.setItem('bis_token', bData.access_token);
             localStorage.removeItem('bis_pending_verification');
             setPendingVerification(null);
             return bData.user;
@@ -471,8 +395,6 @@ export function useAuth() {
             setUser(bData.user);
             setToken(bData.access_token);
             setAuthState(AUTH_STATES.AUTHENTICATED);
-            localStorage.setItem('bis_user', JSON.stringify(bData.user));
-            localStorage.setItem('bis_token', bData.access_token);
             localStorage.removeItem('bis_pending_verification');
             setPendingVerification(null);
             return bData.user;
@@ -487,7 +409,6 @@ export function useAuth() {
           companyName: authUser.user_metadata?.company_name || ''
         };
         setPendingVerification(pending);
-        localStorage.setItem('bis_pending_verification', JSON.stringify(pending));
         throw new Error("Your email address is not verified yet. Please check your inbox for the verification link.");
       }
 
@@ -510,8 +431,6 @@ export function useAuth() {
       setUser(finalUser);
       setToken(finalToken);
       setAuthState(AUTH_STATES.AUTHENTICATED);
-      localStorage.setItem('bis_user', JSON.stringify(finalUser));
-      localStorage.setItem('bis_token', finalToken);
       localStorage.removeItem('bis_pending_verification');
       setPendingVerification(null);
       return finalUser;
@@ -597,7 +516,6 @@ export function useAuth() {
         // Unverified email: Set state to pending verification
         setAuthState(AUTH_STATES.EMAIL_VERIFICATION_PENDING);
         setPendingVerification(pendingData);
-        localStorage.setItem('bis_pending_verification', JSON.stringify(pendingData));
         return { isVerified: false, email: trimmedEmail };
       }
 
@@ -624,8 +542,6 @@ export function useAuth() {
 
       setUser(finalUser);
       setToken(finalToken);
-      localStorage.setItem('bis_token', finalToken);
-      localStorage.setItem('bis_user', JSON.stringify(finalUser));
       setAuthState(AUTH_STATES.AUTHENTICATED);
       localStorage.removeItem('bis_pending_verification');
       setPendingVerification(null);
@@ -680,8 +596,6 @@ export function useAuth() {
         setUser(finalUser);
         setToken(finalToken);
         setAuthState(AUTH_STATES.EMAIL_VERIFIED);
-        localStorage.setItem('bis_user', JSON.stringify(finalUser));
-        localStorage.setItem('bis_token', finalToken);
         localStorage.removeItem('bis_pending_verification');
         setPendingVerification(null);
         return { verified: true, user: finalUser };
@@ -779,8 +693,6 @@ export function useAuth() {
       setToken(finalToken);
       setAuthState(AUTH_STATES.AUTHENTICATED);
       setNeedsOrgOnboarding(false);
-      localStorage.setItem('bis_user', JSON.stringify(finalUser));
-      localStorage.setItem('bis_token', finalToken);
       return finalUser;
     } catch (err) {
       const friendly = formatAuthError(err);
@@ -858,8 +770,6 @@ export function useAuth() {
     setUser(demoUser);
     setToken('demo-token-12345');
     setAuthState(AUTH_STATES.AUTHENTICATED);
-    localStorage.setItem('bis_user', JSON.stringify(demoUser));
-    localStorage.setItem('bis_token', 'demo-token-12345');
     localStorage.removeItem('bis_pending_verification');
     setPendingVerification(null);
     return demoUser;
@@ -877,8 +787,6 @@ export function useAuth() {
         setUser(data.user);
         setToken(data.access_token);
         setAuthState(AUTH_STATES.AUTHENTICATED);
-        localStorage.setItem('bis_user', JSON.stringify(data.user));
-        localStorage.setItem('bis_token', data.access_token);
         localStorage.removeItem('bis_pending_verification');
         setPendingVerification(null);
         return data.user;

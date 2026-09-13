@@ -18,6 +18,7 @@ import ProfileModal from './components/ProfileModal';
 import HelpModal from './components/HelpModal';
 import { useChat } from './hooks/useChat';
 import { useAuth } from './hooks/useAuth';
+import { useFullPageTranslation } from './hooks/useFullPageTranslation';
 import { getDatasetStats } from './services/api';
 
 export default function App() {
@@ -38,6 +39,9 @@ export default function App() {
   const [language, setLanguage] = useState('auto');
   const [indexedCount, setIndexedCount] = useState(24);
   const [complianceInitialQuery, setComplianceInitialQuery] = useState("I manufacture domestic pressure cookers");
+
+  // Mount Bhashini full-page dynamic translation engine for every page & word
+  useFullPageTranslation(language);
 
   // Global Modals
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -74,6 +78,13 @@ export default function App() {
   }, [activeTab]);
 
   const handleTabChange = (tab) => {
+    // Protected features requiring authentication
+    const protectedTabs = ['compliance', 'documents', 'verification', 'admin'];
+    if (protectedTabs.includes(tab) && !auth?.user) {
+      setAuthModalOpen(true);
+      return;
+    }
+
     if (tab === 'admin') {
       window.history.pushState({}, '', '/admin/dashboard');
       setActiveTab('admin');
@@ -114,12 +125,12 @@ export default function App() {
 
   const handleStartSearchFromHome = (queryText) => {
     setComplianceInitialQuery(queryText);
-    setActiveTab('compliance');
+    handleTabChange('compliance');
   };
 
   const handleCheckComplianceForStandard = (std) => {
     setComplianceInitialQuery(`I manufacture ${std.applicable_products?.[0] || std.title}`);
-    setActiveTab('compliance');
+    handleTabChange('compliance');
   };
 
   const handleAskAIAboutStandard = (std) => {
@@ -198,10 +209,11 @@ export default function App() {
           {activeTab === 'compliance' && (
             <ComplianceView
               onOpenEvidence={handleOpenEvidence}
-              onOpenDocAnalyzer={() => setActiveTab('documents')}
+              onOpenDocAnalyzer={() => handleTabChange('documents')}
               onOpenChecklistModal={handleOpenChecklist}
               auth={auth}
               initialQuery={complianceInitialQuery}
+              onOpenAuthModal={() => setAuthModalOpen(true)}
             />
           )}
 
@@ -209,6 +221,9 @@ export default function App() {
             <DocumentAnalyzerView
               onOpenEvidence={handleOpenEvidence}
               onExportPDF={handleOpenChecklist}
+              onNavigate={handleTabChange}
+              auth={auth}
+              onOpenAuthModal={() => setAuthModalOpen(true)}
             />
           )}
 
@@ -216,6 +231,8 @@ export default function App() {
             <VerificationView
               onOpenEvidence={handleOpenEvidence}
               onNavigate={handleTabChange}
+              auth={auth}
+              onOpenAuthModal={() => setAuthModalOpen(true)}
             />
           )}
 
@@ -225,10 +242,12 @@ export default function App() {
 
           {activeTab === 'notifications' && (
             <NotificationsView
-              onNavigate={setActiveTab}
+              onNavigate={handleTabChange}
               onCheckComplianceForStandard={handleCheckComplianceForStandard}
               onAskAIAboutStandard={handleAskAIAboutStandard}
               onOpenEvidence={handleOpenEvidence}
+              auth={auth}
+              onOpenAuthModal={() => setAuthModalOpen(true)}
             />
           )}
 
@@ -237,9 +256,9 @@ export default function App() {
               messages={messages}
               isLoading={isLoading}
               streamingText={streamingText}
-              mode="simple"
               language={language}
-              onSendMessage={(q) => sendMessage({ query: q, language })}
+              onLanguageChange={setLanguage}
+              onSendMessage={({ query, mode, language }) => sendMessage({ query, mode: mode || 'auto', language })}
               onOpenVerifier={() => setActiveTab('verification')}
               onOpenChecklist={handleOpenChecklist}
               onOpenEvidence={handleOpenEvidence}

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, AlertTriangle, FileText, Building2, CheckCircle2, Filter, Sparkles, ExternalLink, ArrowRight, Check, X, ShieldAlert, BookOpen, Upload, Calendar, Settings, FileCheck, Layers, Beaker, Users, Award, ShieldCheck, XCircle, RefreshCw, Stamp } from 'lucide-react';
+import { Bell, AlertTriangle, FileText, Building2, CheckCircle2, Filter, Sparkles, ExternalLink, ArrowRight, Check, X, ShieldAlert, BookOpen, Upload, Calendar, Settings, FileCheck, Layers, Beaker, Users, Award, ShieldCheck, XCircle, RefreshCw, Stamp, Lock } from 'lucide-react';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/api';
 
 export default function NotificationsView({
   onNavigate,
   onCheckComplianceForStandard,
   onAskAIAboutStandard,
-  onOpenEvidence
+  onOpenEvidence,
+  auth,
+  onOpenAuthModal
 }) {
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'verification' | 'qco' | 'amendments' | 'impact' | 'labs'
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -15,7 +17,11 @@ export default function NotificationsView({
 
   const fetchLiveNotifications = async () => {
     try {
-      const data = await getNotifications();
+      const params = {};
+      if (auth?.user?.email) {
+        params.email = auth.user.email;
+      }
+      const data = await getNotifications(params);
       if (Array.isArray(data)) {
         setNotifications(data);
       }
@@ -30,7 +36,7 @@ export default function NotificationsView({
     fetchLiveNotifications();
     const interval = setInterval(fetchLiveNotifications, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [auth?.user?.email]);
 
   const handleMarkAllAsRead = async () => {
     await markAllNotificationsAsRead();
@@ -60,6 +66,10 @@ export default function NotificationsView({
   const handleAction = (action) => {
     if (!action) return;
     if (action.target && onNavigate) {
+      if (!auth?.user && ['verification', 'compliance', 'documents', 'admin'].includes(action.target)) {
+        if (onOpenAuthModal) onOpenAuthModal();
+        return;
+      }
       onNavigate(action.target);
     } else if (action.query && onAskAIAboutStandard) {
       onAskAIAboutStandard({ id: 'Regulatory Notification', title: action.query });
@@ -88,12 +98,37 @@ export default function NotificationsView({
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
               Stay updated with statutory amendments, QCO mandates, lab empanelments, and personalized compliance alerts.
             </p>
+
+            {/* Notification Scope Status Pill */}
+            <div className="pt-1 flex items-center gap-2 text-xs">
+              {auth?.user ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-semibold text-[11px]">
+                  <Building2 size={13} className="text-blue-600" />
+                  Showing notices for <strong className="font-bold">{auth.user.company_name || auth.user.full_name}</strong> ({auth.user.email}) & Manufacturer Alerts
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-medium text-[11px]">
+                  <ShieldCheck size={13} className="text-slate-500" />
+                  Showing Public Manufacturer Bulletins (QCOs, Lab Updates, Amendments)
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
+            {!auth?.user && (
+              <button
+                type="button"
+                onClick={onOpenAuthModal}
+                className="px-3.5 py-2 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-xs font-bold text-[#0b2545] transition-colors shadow-2xs flex items-center gap-1.5"
+              >
+                <Lock size={13} />
+                <span>Enterprise Sign In</span>
+              </button>
+            )}
             <button
               type="button"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
               className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs flex items-center gap-1.5"
             >
               <Check size={13} />

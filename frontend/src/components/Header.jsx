@@ -24,7 +24,11 @@ export default function Header({
   // Fetch live notifications from backend
   const loadNotifications = async () => {
     try {
-      const data = await getNotifications();
+      const params = {};
+      if (auth?.user?.email) {
+        params.email = auth.user.email;
+      }
+      const data = await getNotifications(params);
       if (Array.isArray(data)) {
         setLiveNotifications(data);
         const unread = data.filter(n => n.unread).length;
@@ -418,20 +422,11 @@ export default function Header({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={onOpenProfile}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs"
-                title="View or edit Enterprise Profile & MSME setup"
-              >
-                <Building2 size={14} className="text-blue-600" />
-                <span>Enterprise Profile</span>
-              </button>
-              <button
-                type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white text-xs font-bold transition-all shadow-xs"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 <User size={15} />
-                <span>Sign In</span>
+                <span>Sign In / Register</span>
               </button>
             </div>
           )}

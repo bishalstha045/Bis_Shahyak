@@ -96,7 +96,8 @@ export default function ComplianceView({
   onOpenDocAnalyzer,
   onOpenChecklistModal,
   auth,
-  initialQuery = "IS 3196 के बारे में बताइए"
+  initialQuery = "IS 3196 के बारे में बताइए",
+  onOpenAuthModal
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [loading, setLoading] = useState(false);
@@ -108,21 +109,17 @@ export default function ComplianceView({
   const handleRunSearch = async (targetQuery = query) => {
     if (!targetQuery.trim()) return;
     setLoading(true);
-    setSaveSuccess(false);
     try {
-      // 1. Map Product to Standard
-      const prodRes = await mapProductToStandard(targetQuery);
-      setProductData(prodRes);
-      
-      // 2. Evaluate Baseline Compliance
-      const compRes = await evaluateComplianceMatrix({ product_query: targetQuery });
-      setComplianceData(compRes);
-
-      if (prodRes.applicable_standards && prodRes.applicable_standards.length > 0) {
-        setSelectedStandard(prodRes.applicable_standards[0]);
+      const pData = await mapProductToStandard(targetQuery);
+      setProductData(pData);
+      const topStd = pData?.primary_standards?.[0]?.id || pData?.mapped_standard;
+      if (topStd) {
+        setSelectedStandard(topStd);
+        const cData = await evaluateComplianceMatrix(topStd, targetQuery);
+        setComplianceData(cData);
       }
     } catch (err) {
-      console.error("Compliance search error:", err);
+      console.error("Compliance search failed:", err);
     } finally {
       setLoading(false);
     }
@@ -132,23 +129,24 @@ export default function ComplianceView({
     if (initialQuery) {
       handleRunSearch(initialQuery);
     }
-  }, []);
+  }, [initialQuery]);
 
-  const handleSelectStandard = async (std) => {
-    setSelectedStandard(std);
+  const handleStandardSelect = async (stdId) => {
+    setSelectedStandard(stdId);
     try {
-      const compRes = await evaluateComplianceMatrix({
-        product_query: query,
-        standard_id: std.standard_id
-      });
-      setComplianceData(compRes);
+      const cData = await evaluateComplianceMatrix(stdId, query);
+      setComplianceData(cData);
     } catch (err) {
       console.error("Failed to re-evaluate compliance:", err);
     }
   };
 
   const handleSaveAssessment = async () => {
-    if (!complianceData || !auth?.user) return;
+    if (!complianceData) return;
+    if (!auth?.user) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
     const res = await auth.saveAssessment({
       product_name: complianceData.product_name || query,
       standard_id: complianceData.standard_id,

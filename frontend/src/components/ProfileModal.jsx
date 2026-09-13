@@ -63,9 +63,6 @@ export default function ProfileModal({ isOpen, onClose, auth, onNavigate }) {
       ...formData
     };
 
-    // Update in localStorage
-    localStorage.setItem('bis_user', JSON.stringify(updatedUser));
-
     // Update in auth hook if available
     if (auth?.setUser) {
       auth.setUser(updatedUser);

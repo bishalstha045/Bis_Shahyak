@@ -19,6 +19,25 @@ export async function getDatasetStats() {
   }
 }
 
+export async function translateText({ text, source_language = "en", target_language = "hi" }) {
+  if (!text || target_language === "en" || target_language === "auto") {
+    return text;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, source_language, target_language })
+    });
+    if (!res.ok) throw new Error(`Translation error: ${res.status}`);
+    const data = await res.json();
+    return data.translated_text || data.translated || text;
+  } catch (err) {
+    console.warn("Translation call failed:", err.message);
+    return text;
+  }
+}
+
 // V2 Core Feature: Product -> Applicable BIS Standard Mapping
 export async function mapProductToStandard(productQuery, language = "en") {
   const res = await fetch(`${API_BASE}/api/product-to-standard`, {
@@ -115,23 +134,36 @@ export async function downloadChecklistPDF({ product_description, standards, lan
 }
 
 // -------------------------------------------------------------
-// Dedicated Administrative API Client (Secured with Backend JWT)
+// In-Memory Ephemeral Session Token (Clears completely on refresh)
 // -------------------------------------------------------------
+let _inMemoryAuthToken = null;
+
+export const setAuthSessionToken = (token) => {
+  _inMemoryAuthToken = token;
+};
+
+export const getAuthSessionToken = () => {
+  return _inMemoryAuthToken;
+};
+
+// Purge any stale legacy persisted user/tokens on startup
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('bis_user');
+    localStorage.removeItem('bis_token');
+    localStorage.removeItem('bis_pending_verification');
+    localStorage.removeItem('bis_admin_fallback_store_v2');
+    localStorage.removeItem('bis_admin_mock_store_v1');
+  } catch (e) {}
+}
+
 const getAdminHeaders = () => {
-  const token = localStorage.getItem('bis_token') || '';
+  const token = getAuthSessionToken() || '';
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`
   };
 };
-
-// Clear any legacy mock storage keys
-if (typeof window !== 'undefined') {
-  try {
-    localStorage.removeItem('bis_admin_fallback_store_v2');
-    localStorage.removeItem('bis_admin_mock_store_v1');
-  } catch (e) {}
-}
 
 export async function getAdminStats() {
   try {
@@ -424,7 +456,7 @@ export async function saveAdminSettings(settings) {
 
 // Public / Manufacturer Submission for BIS Verification
 export async function submitVerificationDossier(data) {
-  const token = localStorage.getItem('bis_token');
+  const token = getAuthSessionToken();
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -443,7 +475,7 @@ export async function submitVerificationDossier(data) {
 
 // Multipart File Upload for Document Analyzer
 export async function uploadDocumentFile(formData) {
-  const token = localStorage.getItem('bis_token');
+  const token = getAuthSessionToken();
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -462,7 +494,7 @@ export async function uploadDocumentFile(formData) {
 
 // Notifications API
 export async function getNotifications(params = {}) {
-  const token = localStorage.getItem('bis_token');
+  const token = getAuthSessionToken();
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -479,7 +511,7 @@ export async function getNotifications(params = {}) {
 }
 
 export async function markNotificationAsRead(id) {
-  const token = localStorage.getItem('bis_token');
+  const token = getAuthSessionToken();
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -496,7 +528,7 @@ export async function markNotificationAsRead(id) {
 }
 
 export async function markAllNotificationsAsRead() {
-  const token = localStorage.getItem('bis_token');
+  const token = getAuthSessionToken();
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -513,13 +545,14 @@ export async function markAllNotificationsAsRead() {
 }
 
 // User Submission / Verification status
-export async function getUserSubmissionStatus() {
-  const token = localStorage.getItem('bis_token');
-  if (!token) return null;
+export async function getUserSubmissionStatus(email = null) {
+  if (!email) return null;
+  const token = getAuthSessionToken();
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   try {
-    const res = await fetch(`${API_BASE}/api/submissions`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const query = new URLSearchParams({ email }).toString();
+    const res = await fetch(`${API_BASE}/api/submissions?${query}`, { headers });
     if (!res.ok) return null;
     const data = await res.json();
     const subs = data.submissions || data.data?.submissions || [];
@@ -528,3 +561,46 @@ export async function getUserSubmissionStatus() {
     return null;
   }
 }
+
+// Standards Catalog API
+export async function getStandards() {
+  try {
+    const res = await fetch(`${API_BASE}/api/standards`);
+    if (!res.ok) throw new Error(`Failed to load standards: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("getStandards network notice:", err.message);
+    return { success: false, standards: [] };
+  }
+}
+
+// Search Standards API
+export async function searchStandards(query, sector = null, limit = 10) {
+  try {
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    if (sector) params.set('sector', sector);
+    const res = await fetch(`${API_BASE}/api/search?${params.toString()}`);
+    if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("searchStandards network notice:", err.message);
+    return { query, count: 0, results: [] };
+  }
+}
+
+// HS-Code Search API (MongoDB exact lookup)
+export async function getStandardByHsCode(hsCode) {
+  try {
+    const trimmed = (hsCode || '').trim();
+    if (!trimmed) {
+      return { success: false, message: "Please enter an HS Code." };
+    }
+    const res = await fetch(`${API_BASE}/api/standards/${encodeURIComponent(trimmed)}`);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("getStandardByHsCode network error:", err);
+    return { success: false, message: "Server connection error. Please verify backend is running." };
+  }
+}
+
