@@ -25,8 +25,7 @@ export default function Sidebar({
     { id: 'verification', label: 'Verification', icon: <BadgeCheck size={18} /> },
     { id: 'assistant', label: 'AI Assistant', icon: <Sparkles size={18} /> },
     { id: 'compare', label: 'Compare', icon: <Scale size={18} /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> },
-    { id: 'admin', label: 'Admin Portal', icon: <Landmark size={18} />, badge: 'Officer' }
+    { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> }
   ];
 
   return (

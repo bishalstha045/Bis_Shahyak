@@ -129,7 +129,7 @@ export default function MessageBubble({ message, onOpenEvidence, onOpenChecklist
           {/* Header Badges */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 dark:border-gray-800 pb-2">
             <div className="flex items-center gap-2">
-              {message.confidence !== undefined && (
+              {message.confidence !== undefined && message.confidence !== null && (message.mode === 'rag' || (message.citations && message.citations.length > 0)) && (
                 <ConfidenceBadge score={message.confidence} />
               )}
               {message.compliance_readiness !== undefined && message.compliance_readiness > 0 && (
@@ -138,8 +138,12 @@ export default function MessageBubble({ message, onOpenEvidence, onOpenChecklist
                 </span>
               )}
             </div>
-            <span className="text-[10px] text-gray-400 font-semibold uppercase">
-              Official BIS Compliance Synthesis
+            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+              {message.mode === 'gemini' || message.mode?.includes('gemini') || (!message.citations?.length && message.mode !== 'rag')
+                ? 'Powered by Gemini AI'
+                : message.mode === 'rag'
+                ? 'Grounded BIS Knowledge'
+                : 'Auto (Hybrid)'}
             </span>
           </div>
 

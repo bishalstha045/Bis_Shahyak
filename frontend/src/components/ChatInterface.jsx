@@ -8,11 +8,13 @@ export default function ChatInterface({
   isLoading,
   streamingText,
   language,
+  onLanguageChange,
   onSendMessage,
   onOpenVerifier,
   onOpenChecklist,
   onOpenEvidence
 }) {
+  const [activeMode, setActiveMode] = React.useState('auto');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -110,7 +112,7 @@ export default function ChatInterface({
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => onSendMessage({ query: p.query, language })}
+                  onClick={() => onSendMessage({ query: p.query, mode: 'auto', language })}
                   className="p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs transition-all text-left group flex items-start justify-between gap-3"
                 >
                   <div className="flex items-start gap-3 min-w-0">
@@ -142,7 +144,7 @@ export default function ChatInterface({
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => onSendMessage({ query: q, language })}
+                    onClick={() => onSendMessage({ query: q, mode: 'auto', language })}
                     className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-blue-50/80 border border-slate-200 text-xs font-semibold text-slate-700 hover:text-[#0b2545] hover:border-blue-300 transition-all shadow-2xs"
                   >
                     {q}
@@ -175,7 +177,13 @@ export default function ChatInterface({
               <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-2">
                 <div className="flex items-center gap-2 text-xs text-[#0b2545] font-bold">
                   <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-ping" />
-                  <span>Searching Bureau of Indian Standards records & synthesizing evidence...</span>
+                  <span>
+                    {activeMode === 'gemini'
+                      ? 'Powered by Gemini AI — Generating response...'
+                      : activeMode === 'rag'
+                      ? 'Grounded BIS Knowledge — Searching Bureau of Indian Standards records...'
+                      : 'Auto (Hybrid) — Synthesizing response...'}
+                  </span>
                 </div>
                 {streamingText && (
                   <div className="text-xs sm:text-sm text-slate-700 font-sans leading-relaxed whitespace-pre-wrap">
@@ -190,11 +198,16 @@ export default function ChatInterface({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar at Bottom */}
+      {/* Input Bar at Bottom with Auto/Gemini/RAG & Bhashini */}
       <InputBar
-        onSend={(q) => onSendMessage({ query: q, language })}
+        onSend={(q, m, l) => {
+          const chosenMode = m || 'auto';
+          setActiveMode(chosenMode);
+          onSendMessage({ query: q, mode: chosenMode, language: l || language });
+        }}
         isLoading={isLoading}
         language={language}
+        onLanguageChange={onLanguageChange}
         onOpenVerifier={onOpenVerifier}
       />
     </div>

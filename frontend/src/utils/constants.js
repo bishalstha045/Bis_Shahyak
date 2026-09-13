@@ -1,6 +1,6 @@
 export const INDIC_LANGUAGES = [
   { code: 'auto', name: 'Auto Detect (स्वतः पहचान)' },
-  { code: 'en', name: 'English' },
+  { code: 'en', name: 'English (Default)' },
   { code: 'hi', name: 'हिंदी (Hindi)' },
   { code: 'ta', name: 'தமிழ் (Tamil)' },
   { code: 'te', name: 'తెలుగు (Telugu)' },
@@ -12,7 +12,11 @@ export const INDIC_LANGUAGES = [
   { code: 'pa', name: 'ਪੰਜਾਬੀ (Punjabi)' },
   { code: 'or', name: 'ଓଡ଼ିଆ (Odia)' },
   { code: 'as', name: 'অসমীয়া (Assamese)' },
-  { code: 'ur', name: 'اردو (Urdu)' }
+  { code: 'ur', name: 'اردو (Urdu)' },
+  { code: 'ne', name: 'नेपाली (Nepali)' },
+  { code: 'sa', name: 'संस्कृतम् (Sanskrit)' },
+  { code: 'kok', name: 'कोंकणी (Konkani)' },
+  { code: 'mai', name: 'मैथिली (Maithili)' }
 ];
 
 export const DEMO_WORKFLOW_PROMPTS = [
@@ -115,6 +119,6 @@ CONCLUSION: Conforms to electrical safety clauses 8.1, 13.2, and 19.1 of IS 302 
 export const COMPARISON_PAIRS = [
   { std_a: "IS 15844 (Part 1):2023", std_b: "IS 15844 (Part 3):2024", label: "Sports Footwear: General Purpose vs Professional" },
   { std_a: "IS 302 (Part 2/Sec 21):2024", std_b: "IS 302 (Part 1):2024", label: "Water Heaters vs General Electrical Safety" },
-  { std_a: "IS 269:2015", std_b: "IS 18189:2023", label: "Ordinary Portland Cement vs Low-Carbon Calcined Clay Cement" },
-  { std_a: "IS 18266:2023", std_b: "IS 13422:2024 / ISO 10282:2023", label: "Medical Respirators vs Sterile Surgical Gloves" }
+  { std_a: "0101.29.10", std_b: "0201.30.00", label: "HSN 0101 (Horses) vs HSN 0201 (Bovine Meat)" },
+  { std_a: "IS 2347:2017", std_b: "8432", label: "Pressure Cookers (IS) vs Farm Machinery (HSN)" }
 ];

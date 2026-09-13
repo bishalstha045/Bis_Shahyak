@@ -60,5 +60,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# Local Reference Materials
+# Local Reference Materials & Scratch
 justforreference/
+forstandars/
+scratch/

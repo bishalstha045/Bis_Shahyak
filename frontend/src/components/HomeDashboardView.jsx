@@ -28,7 +28,8 @@ export default function HomeDashboardView({
     recognition.onerror = () => setIsListening(false);
 
     recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
+      let text = event.results[0][0].transcript || '';
+      text = text.replace(/\b(\w+)(?:\s+\1\b)+/gi, '$1').replace(/\s+/g, ' ').trim();
       setQuery(text);
       if (onAskAI) onAskAI(text);
       else if (onStartSearch) onStartSearch(text);

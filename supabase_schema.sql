@@ -1,8 +1,7 @@
--- ==============================================================================
+
 -- BIS SAHAYAK - SUPABASE DATABASE SCHEMA
 -- Execute this script in your Supabase Project -> SQL Editor
 -- URL: https://cramrpbgdkqbwxxmwoxz.supabase.co
--- ==============================================================================
 
 -- 1. PROFILES TABLE
 -- Stores user identity and contact details linked 1-to-1 with auth.users

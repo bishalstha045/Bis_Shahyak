@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Sparkles, Eye, ChevronLeft, ChevronRight, Info, ExternalLink, X, BookOpen, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { getDatasetStats } from '../services/api';
+import { Search, Filter, Sparkles, Eye, ChevronLeft, ChevronRight, Info, ExternalLink, X, BookOpen, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
+import { getDatasetStats, getStandardByHsCode } from '../services/api';
 import Footer from './Footer';
 
 export default function StandardsView({
@@ -16,10 +16,108 @@ export default function StandardsView({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  // HS-Code & Standards Direct Search State
+  const [hsState, setHsState] = useState({
+    searched: false,
+    loading: false,
+    query: '',
+    result: null,
+    resultType: null,
+    notFound: false,
+    invalid: false,
+    error: null
+  });
+
+  const executeHsSearch = async (codeToSearch) => {
+    const raw = (codeToSearch !== undefined ? codeToSearch : searchQuery).trim();
+    if (!raw) {
+      setHsState({
+        searched: true,
+        loading: false,
+        query: '',
+        result: null,
+        resultType: null,
+        notFound: false,
+        invalid: true,
+        error: "Please enter an HS Code (e.g. 0101.29.10, 8432) or standard keyword."
+      });
+      return;
+    }
+
+    setHsState({
+      searched: true,
+      loading: true,
+      query: raw,
+      result: null,
+      resultType: null,
+      notFound: false,
+      invalid: false,
+      error: null
+    });
+
+    try {
+      const res = await getStandardByHsCode(raw);
+      if (res && res.success && res.data) {
+        setHsState({
+          searched: true,
+          loading: false,
+          query: raw,
+          result: res.data,
+          resultType: res.type || (res.data.hs_code ? 'hs_code' : 'standard'),
+          notFound: false,
+          invalid: false,
+          error: null
+        });
+      } else if (res && (res.message === "HS Code not found" || !res.success)) {
+        setHsState({
+          searched: true,
+          loading: false,
+          query: raw,
+          result: null,
+          resultType: null,
+          notFound: true,
+          invalid: false,
+          error: null
+        });
+      } else {
+        setHsState({
+          searched: true,
+          loading: false,
+          query: raw,
+          result: null,
+          resultType: null,
+          notFound: false,
+          invalid: false,
+          error: res?.message || "Server error occurred while searching database."
+        });
+      }
+    } catch (err) {
+      setHsState({
+        searched: true,
+        loading: false,
+        query: raw,
+        result: null,
+        resultType: null,
+        notFound: false,
+        invalid: false,
+        error: "Server connection failed. Please ensure the backend is running."
+      });
+    }
+  };
+
   useEffect(() => {
     fetch('/standards_metadata.json')
-      .then(res => res.json())
-      .then(data => setStandards(data))
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStandards(data);
+        } else {
+          throw new Error("Invalid standards data");
+        }
+      })
       .catch(() => {
         getDatasetStats().then(data => {
           if (data && data.standards) setStandards(data.standards);
@@ -127,26 +225,281 @@ export default function StandardsView({
             </p>
           </div>
 
-          {/* 2. Search Bar + Filter Button */}
-          <div className="flex flex-col sm:flex-row items-stretch gap-3">
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-4 top-3 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                placeholder="Search by standard number, product, industry or keyword..."
-                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium outline-none focus:border-[#0b2545] focus:ring-1 focus:ring-[#0b2545] transition-all placeholder:text-slate-400 shadow-2xs"
-              />
+          {/* 2. Search Bar + Action Button */}
+          <div className="space-y-2">
+            <form onSubmit={(e) => { e.preventDefault(); executeHsSearch(); }} className="flex flex-col sm:flex-row items-stretch gap-3">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-4 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  placeholder="Enter HS Code (e.g. 0101.29.10, 8432) or standard keyword..."
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium outline-none focus:border-[#0b2545] focus:ring-1 focus:ring-[#0b2545] transition-all placeholder:text-slate-400 shadow-2xs"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={hsState.loading}
+                className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white text-xs font-bold transition-colors shadow-xs shrink-0 disabled:opacity-50 cursor-pointer"
+              >
+                {hsState.loading ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Searching...</span>
+                  </>
+                ) : (
+                  <>
+                    <Search size={14} />
+                    <span>Search</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs shrink-0"
+              >
+                <Filter size={14} />
+                <span>Filters</span>
+              </button>
+            </form>
+
+            {/* Quick HS Code & Standards Samples */}
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 overflow-x-auto no-scrollbar pt-1">
+              <span className="font-semibold text-slate-600 whitespace-nowrap">Try Query:</span>
+              {['0101.29.10', '0201.30.00', '0304.49.40', '8432', 'IS 2347', 'boneless', 'tuna'].map((sample) => (
+                <button
+                  key={sample}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(sample);
+                    executeHsSearch(sample);
+                  }}
+                  className="px-2.5 py-0.5 rounded-md bg-white border border-slate-200 hover:border-[#0b2545] hover:text-[#0b2545] text-slate-700 font-mono transition-colors whitespace-nowrap shadow-2xs cursor-pointer"
+                >
+                  {sample}
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs shrink-0"
-            >
-              <Filter size={14} />
-              <span>Filters</span>
-            </button>
           </div>
+
+          {/* Lookup Result States */}
+          {hsState.searched && (
+            <div className="animate-fade-in">
+              {/* 1. Loading State */}
+              {hsState.loading && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 flex items-center justify-center gap-3">
+                  <Loader2 size={20} className="animate-spin text-[#0b2545]" />
+                  <span className="text-xs font-bold text-slate-700">
+                    Searching database for <span className="font-mono text-[#0b2545]">"{hsState.query}"</span>...
+                  </span>
+                </div>
+              )}
+
+              {/* 2. Found State — HSN Code Result */}
+              {!hsState.loading && hsState.result && hsState.result.hs_code && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 size={16} className="text-emerald-600" />
+                      <span className="font-bold text-xs uppercase tracking-wider text-emerald-800">
+                        Official HSN Record Found
+                      </span>
+                      <span className="hidden sm:inline-block text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-mono">
+                        HSN / ITC-HS Catalog
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setHsState(prev => ({ ...prev, searched: false, result: null }))}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                      title="Dismiss"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                        HS Code:
+                      </span>
+                      <span className="text-lg font-extrabold text-[#0b2545] font-mono mt-1 block">
+                        {hsState.result.hs_code}
+                      </span>
+                    </div>
+                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Product Description:
+                      </span>
+                      <p className="text-sm font-semibold text-slate-800 mt-1">
+                        {hsState.result.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {hsState.result.related_items && hsState.result.related_items.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Related Sub-Items & Headings:
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {hsState.result.related_items.slice(0, 6).map((item, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setSearchQuery(item.hs_code);
+                              executeHsSearch(item.hs_code);
+                            }}
+                            className="p-2.5 rounded-lg border border-slate-100 bg-slate-50 hover:bg-white hover:border-[#0b2545] transition-all cursor-pointer text-xs"
+                          >
+                            <span className="font-mono font-bold text-[#0b2545]">{item.hs_code}</span>
+                            <p className="text-slate-600 line-clamp-1 mt-0.5">{item.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onAskAIAboutStandard) {
+                          onAskAIAboutStandard({
+                            id: `HSN ${hsState.result.hs_code}`,
+                            title: hsState.result.description
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Sparkles size={13} className="text-orange-400" />
+                      <span>Ask AI About HS Code {hsState.result.hs_code}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Found State — Standard Result */}
+              {!hsState.loading && hsState.result && hsState.result.id && !hsState.result.hs_code && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 size={16} className="text-emerald-600" />
+                      <span className="font-bold text-xs uppercase tracking-wider text-emerald-800">
+                        Official BIS Standard Found
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setHsState(prev => ({ ...prev, searched: false, result: null }))}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                      title="Dismiss"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-lg font-extrabold text-[#0b2545]">
+                          {hsState.result.id}
+                        </span>
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          {hsState.result.status || 'Current National Standard'}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-800 mt-1">
+                        {hsState.result.title}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Sector: {hsState.result.sector || 'National Standards Specification'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStandardForDetails(hsState.result)}
+                      className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors shadow-2xs cursor-pointer"
+                    >
+                      View Mandatory Clauses
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onAskAIAboutStandard) {
+                          onAskAIAboutStandard({
+                            id: hsState.result.id,
+                            title: hsState.result.title
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0b2545] hover:bg-[#133b68] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Sparkles size={13} className="text-orange-400" />
+                      <span>Ask AI / Gemini About This Standard</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Not Found State */}
+              {!hsState.loading && hsState.notFound && (
+                <div className="bg-amber-50/90 rounded-2xl border border-amber-200 p-5 flex items-start justify-between gap-3 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <Info size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-xs text-amber-900">
+                        No product found for this HS Code.
+                      </h4>
+                      <p className="text-xs text-amber-700">
+                        No matching record found for <span className="font-mono font-bold">"{hsState.query}"</span> in the database.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHsState(prev => ({ ...prev, searched: false }))}
+                    className="p-1 text-amber-600 hover:text-amber-800 rounded-lg"
+                    title="Dismiss"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+
+              {/* 5. Invalid Input State */}
+              {!hsState.loading && hsState.invalid && (
+                <div className="bg-red-50/90 rounded-2xl border border-red-200 p-5 flex items-start justify-between gap-3 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <Info size={18} className="text-red-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-xs text-red-900">
+                        Invalid Input
+                      </h4>
+                      <p className="text-xs text-red-700">
+                        {hsState.error || "Please enter a valid HS Code (e.g., 0101.29.10, 8432) or standard keyword."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHsState(prev => ({ ...prev, searched: false }))}
+                    className="p-1 text-red-600 hover:text-red-800 rounded-lg"
+                    title="Dismiss"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 3. Category Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
@@ -263,7 +616,18 @@ export default function StandardsView({
                   ) : (
                     <tr>
                       <td colSpan={4} className="py-12 text-center text-slate-400">
-                        No standards found matching "{searchQuery}". Try searching by standard number or product name.
+                        {hsState.result && hsState.result.hs_code ? (
+                          <div className="space-y-1">
+                            <p className="font-semibold text-slate-700 text-xs">
+                              Showing Official HSN Record above for "{hsState.query}"
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                              To search BIS National Standards, query by standard code (e.g. IS 2347, IS 17803) or generic product category.
+                            </p>
+                          </div>
+                        ) : (
+                          `No standards found matching "${searchQuery}". Try searching by standard number or product name.`
+                        )}
                       </td>
                     </tr>
                   )}

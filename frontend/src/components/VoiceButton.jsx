@@ -1,15 +1,12 @@
 import React from 'react';
-import { Mic, MicOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { useVoice } from '../hooks/useVoice';
 
-export default function VoiceButton({ onResult, language = 'auto', disabled = false }) {
+export default function VoiceButton({ onResult, onFinal, language = 'auto', disabled = false }) {
   const { isListening, startListening, stopListening } = useVoice({
     language,
-    onResult: (text, isFinal) => {
-      if (text && onResult) {
-        onResult(text, isFinal);
-      }
-    }
+    onResult,
+    onFinal
   });
 
   return (
