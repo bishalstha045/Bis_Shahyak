@@ -56,46 +56,70 @@ const formatSupabaseUser = (sessionUser, profileData = null, orgData = null) => 
 };
 
 export function useAuth() {
-  // Pure ephemeral state: on refresh or unauthenticated entry, all state is null/unauthenticated (like chat assistant)
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [authState, setAuthState] = useState(AUTH_STATES.UNAUTHENTICATED);
+  // Initialize user and token from localStorage so authenticated state is preserved across refresh
+  const [user, setUser] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('bis_user');
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [token, setToken] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('bis_token') || null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [authState, setAuthState] = useState(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('bis_user')) {
+      return AUTH_STATES.AUTHENTICATED;
+    }
+    return AUTH_STATES.UNAUTHENTICATED;
+  });
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [pendingVerification, setPendingVerification] = useState(null);
+  const [pendingVerification, setPendingVerification] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const p = localStorage.getItem('bis_pending_verification');
+        return p ? JSON.parse(p) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
 
   // Synchronize in-memory auth token with api client
   useEffect(() => {
     setAuthSessionToken(token);
   }, [token]);
 
-  // Purge any stale persistent storage on load
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('bis_user');
-        localStorage.removeItem('bis_token');
-        localStorage.removeItem('bis_pending_verification');
-      } catch (e) {}
-    }
-  }, []);
-
   // Notice state for Google existing user detected during signup
   const [googleNotice, setGoogleNotice] = useState(null);
 
-  // Needs onboarding state (e.g. new Google OAuth user who needs organization setup)
+  // Needs onboarding state (optional)
   const [needsOrgOnboarding, setNeedsOrgOnboarding] = useState(false);
 
   // Helper to check profile and organization
-  // Supabase is used strictly for Auth; user profiles and enterprise details are persisted via MongoDB and Supabase auth user_metadata.
   const checkDatabaseProfileAndOrg = useCallback(async (userId) => {
     return { profile: null, org: null };
   }, []);
 
   // Helper to safely save or upsert profile & org to database
   const saveProfileAndOrgToDatabase = useCallback(async (userObj, orgDetails) => {
-    // User profile and organization details are safely persisted in MongoDB via syncWithBackend and in auth metadata via supabase.auth.updateUser.
     return;
   }, []);
 
@@ -105,32 +129,81 @@ export function useAuth() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseSession.access_token}`
+          'Authorization': `Bearer ${supabaseSession?.access_token || ''}`
         },
         body: JSON.stringify(additionalData)
       });
       if (res.ok) {
         return await res.json();
       }
-      console.warn("Backend sync failed:", await res.text());
     } catch (err) {
-      console.warn("Backend sync error:", err);
+      // Backend may be offline or in standalone Vercel mode; ignore sync error
     }
     return null;
   }, []);
 
+  // Universal session applicator: sets user, token, localStorage, and triggers background sync
+  const applyAuthSession = useCallback(async (session, mounted = true) => {
+    if (!session || !session.user || !mounted) return;
+    const authUser = session.user;
+    const isGoogle = authUser.app_metadata?.provider === 'google' || authUser.identities?.some(id => id.provider === 'google');
+    const isVerified = Boolean(authUser.email_confirmed_at || authUser.phone_confirmed_at || isGoogle);
+
+    const { profile, org } = await checkDatabaseProfileAndOrg(authUser.id);
+    const formatted = formatSupabaseUser(authUser, profile, org);
+
+    if (isVerified) {
+      setUser(formatted);
+      setToken(session.access_token);
+      setAuthState(AUTH_STATES.AUTHENTICATED);
+      setNeedsOrgOnboarding(false);
+      setGoogleNotice(null);
+      setPendingVerification(null);
+
+      try {
+        localStorage.setItem('bis_user', JSON.stringify(formatted));
+        localStorage.setItem('bis_token', session.access_token);
+        localStorage.removeItem('bis_pending_verification');
+      } catch (e) {}
+
+      // Background sync with backend if available
+      syncWithBackend(session, {
+        email: formatted.email,
+        full_name: formatted.full_name,
+        company_name: formatted.company_name,
+        role: formatted.role,
+        phone: formatted.phone,
+        sector: formatted.sector,
+        enterprise_category: formatted.enterprise_category
+      }).then((backendSync) => {
+        if (backendSync?.user && mounted) {
+          const finalUser = backendSync.user;
+          const finalToken = backendSync.access_token || session.access_token;
+          setUser(finalUser);
+          setToken(finalToken);
+          try {
+            localStorage.setItem('bis_user', JSON.stringify(finalUser));
+            localStorage.setItem('bis_token', finalToken);
+          } catch (e) {}
+        }
+      }).catch(() => {});
+    } else if (authUser.email) {
+      setAuthState(AUTH_STATES.EMAIL_VERIFICATION_PENDING);
+      const pending = {
+        email: authUser.email,
+        fullName: formatted.full_name,
+        companyName: formatted.company_name
+      };
+      setPendingVerification(pending);
+      try {
+        localStorage.setItem('bis_pending_verification', JSON.stringify(pending));
+      } catch (e) {}
+    }
+  }, [checkDatabaseProfileAndOrg, syncWithBackend]);
+
   // Initialize and listen to Supabase Auth State
   useEffect(() => {
     let mounted = true;
-
-    // Purge any persistent storage on mount to guarantee ephemeral session reset
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('bis_user');
-        localStorage.removeItem('bis_token');
-        localStorage.removeItem('bis_pending_verification');
-      } catch (e) {}
-    }
 
     async function initSession() {
       try {
@@ -138,71 +211,14 @@ export function useAuth() {
         if (error) throw error;
 
         if (session && session.user && mounted) {
-          const authUser = session.user;
-          const isVerified = Boolean(authUser.email_confirmed_at || authUser.phone_confirmed_at);
-          const { profile, org } = await checkDatabaseProfileAndOrg(authUser.id);
-          const formatted = formatSupabaseUser(authUser, profile, org);
-
-          // Check if user came from OAuth with intent
-          const oauthIntent = sessionStorage.getItem('bis_oauth_intent');
-          if (oauthIntent) {
-            sessionStorage.removeItem('bis_oauth_intent');
-            // If user clicked "Sign up with Google" but already had completed org/profile
-            if (oauthIntent === 'signup' && (org || authUser.user_metadata?.has_organization)) {
-              setGoogleNotice({
-                type: 'already_registered',
-                message: 'This Google account is already registered with BIS Sahayak.'
-              });
-            }
-          }
-
-          // Check if Google user or email user needs Organization Onboarding
-          const hasOrg = Boolean(org?.name || authUser.user_metadata?.has_organization || authUser.user_metadata?.company_name);
-
-          if (!hasOrg && isVerified) {
-            // Needs organization setup
-            setUser(formatted);
-            setToken(session.access_token);
-            setNeedsOrgOnboarding(true);
-            setAuthState(AUTH_STATES.ORGANIZATION_SETUP);
-            return;
-          }
-
-          if (isVerified) {
-            // Verified and complete
-            // Sync with backend Express to get the backend JWT
-            const backendSync = await syncWithBackend(session, {
-              email: formatted.email,
-              full_name: formatted.full_name,
-              company_name: formatted.company_name,
-              role: formatted.role,
-              phone: formatted.phone,
-              sector: formatted.sector,
-              enterprise_category: formatted.enterprise_category
-            });
-
-            const finalUser = backendSync?.user || formatted;
-            const finalToken = backendSync?.access_token || session.access_token;
-
-            setUser(finalUser);
-            setToken(finalToken);
-            setAuthState(AUTH_STATES.AUTHENTICATED);
-            setNeedsOrgOnboarding(false);
-            localStorage.removeItem('bis_pending_verification');
-            setPendingVerification(null);
-          } else if (authUser.email) {
-            // Unverified email session - do not allow into authenticated app
-            setAuthState(AUTH_STATES.EMAIL_VERIFICATION_PENDING);
-            setPendingVerification({
-              email: authUser.email,
-              fullName: formatted.full_name,
-              companyName: formatted.company_name
-            });
-          } else {
-            setAuthState(AUTH_STATES.UNAUTHENTICATED);
-          }
+          await applyAuthSession(session, mounted);
         } else if (mounted) {
-          setAuthState(AUTH_STATES.UNAUTHENTICATED);
+          // If no session exists in Supabase and no user in localStorage, mark unauthenticated
+          if (!localStorage.getItem('bis_user')) {
+            setAuthState(AUTH_STATES.UNAUTHENTICATED);
+            setUser(null);
+            setToken(null);
+          }
         }
       } catch (err) {
         console.warn("Supabase session check:", err.message);
@@ -211,75 +227,24 @@ export function useAuth() {
 
     initSession();
 
-    // Listen to real-time auth state events
+    // Listen to real-time auth state events (e.g. Google OAuth redirect callback)
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
       if (session && session.user) {
-        const authUser = session.user;
-        const isVerified = Boolean(authUser.email_confirmed_at || authUser.phone_confirmed_at);
-        const { profile, org } = await checkDatabaseProfileAndOrg(authUser.id);
-        const formatted = formatSupabaseUser(authUser, profile, org);
-
-        const oauthIntent = sessionStorage.getItem('bis_oauth_intent');
-        if (oauthIntent) {
-          sessionStorage.removeItem('bis_oauth_intent');
-          if (oauthIntent === 'signup' && (org || authUser.user_metadata?.has_organization)) {
-            setGoogleNotice({
-              type: 'already_registered',
-              message: 'This Google account is already registered with BIS Sahayak.'
-            });
-          }
-        }
-
-        const hasOrg = Boolean(org?.name || authUser.user_metadata?.has_organization || authUser.user_metadata?.company_name);
-
-        if (!hasOrg && isVerified) {
-          setUser(formatted);
-          setToken(session.access_token);
-          setNeedsOrgOnboarding(true);
-          setAuthState(AUTH_STATES.ORGANIZATION_SETUP);
-          return;
-        }
-
-        if (isVerified) {
-          // Check if we need to sync to backend (e.g., auth state change)
-          const backendSync = await syncWithBackend(session, {
-            email: formatted.email,
-            full_name: formatted.full_name,
-            company_name: formatted.company_name,
-            role: formatted.role,
-            phone: formatted.phone,
-            sector: formatted.sector,
-            enterprise_category: formatted.enterprise_category
-          });
-
-          const finalUser = backendSync?.user || formatted;
-          const finalToken = backendSync?.access_token || session.access_token;
-
-          setUser(finalUser);
-          setToken(finalToken);
-          setAuthState(AUTH_STATES.AUTHENTICATED);
-          setNeedsOrgOnboarding(false);
-          localStorage.removeItem('bis_pending_verification');
-          setPendingVerification(null);
-        } else if (authUser.email) {
-          setAuthState(AUTH_STATES.EMAIL_VERIFICATION_PENDING);
-          setPendingVerification({
-            email: authUser.email,
-            fullName: formatted.full_name,
-            companyName: formatted.company_name
-          });
-        }
+        await applyAuthSession(session, mounted);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setToken(null);
         setAuthState(AUTH_STATES.UNAUTHENTICATED);
         setNeedsOrgOnboarding(false);
         setGoogleNotice(null);
-        localStorage.removeItem('bis_user');
-        localStorage.removeItem('bis_token');
-        localStorage.removeItem('bis_pending_verification');
+        setPendingVerification(null);
+        try {
+          localStorage.removeItem('bis_user');
+          localStorage.removeItem('bis_token');
+          localStorage.removeItem('bis_pending_verification');
+        } catch (e) {}
       }
     });
 
@@ -287,7 +252,7 @@ export function useAuth() {
       mounted = false;
       authListener?.subscription?.unsubscribe();
     };
-  }, [checkDatabaseProfileAndOrg]);
+  }, [applyAuthSession]);
 
   // Clean, user-friendly error mapper
   const formatAuthError = (err) => {
@@ -370,7 +335,11 @@ export function useAuth() {
             setUser(bData.user);
             setToken(bData.access_token);
             setAuthState(AUTH_STATES.AUTHENTICATED);
-            localStorage.removeItem('bis_pending_verification');
+            try {
+              localStorage.setItem('bis_user', JSON.stringify(bData.user));
+              localStorage.setItem('bis_token', bData.access_token);
+              localStorage.removeItem('bis_pending_verification');
+            } catch (e) {}
             setPendingVerification(null);
             return bData.user;
           }
@@ -380,7 +349,7 @@ export function useAuth() {
       }
 
       const authUser = data.user;
-      const isVerified = Boolean(authUser.email_confirmed_at);
+      const isVerified = Boolean(authUser.email_confirmed_at || authUser.app_metadata?.provider === 'google');
 
       if (!isVerified) {
         // If unconfirmed in Supabase, verify if local backend account can proceed
@@ -395,7 +364,11 @@ export function useAuth() {
             setUser(bData.user);
             setToken(bData.access_token);
             setAuthState(AUTH_STATES.AUTHENTICATED);
-            localStorage.removeItem('bis_pending_verification');
+            try {
+              localStorage.setItem('bis_user', JSON.stringify(bData.user));
+              localStorage.setItem('bis_token', bData.access_token);
+              localStorage.removeItem('bis_pending_verification');
+            } catch (e) {}
             setPendingVerification(null);
             return bData.user;
           }
@@ -409,6 +382,9 @@ export function useAuth() {
           companyName: authUser.user_metadata?.company_name || ''
         };
         setPendingVerification(pending);
+        try {
+          localStorage.setItem('bis_pending_verification', JSON.stringify(pending));
+        } catch (e) {}
         throw new Error("Your email address is not verified yet. Please check your inbox for the verification link.");
       }
 
@@ -431,7 +407,11 @@ export function useAuth() {
       setUser(finalUser);
       setToken(finalToken);
       setAuthState(AUTH_STATES.AUTHENTICATED);
-      localStorage.removeItem('bis_pending_verification');
+      try {
+        localStorage.setItem('bis_user', JSON.stringify(finalUser));
+        localStorage.setItem('bis_token', finalToken);
+        localStorage.removeItem('bis_pending_verification');
+      } catch (e) {}
       setPendingVerification(null);
       return finalUser;
     } catch (err) {
@@ -543,7 +523,11 @@ export function useAuth() {
       setUser(finalUser);
       setToken(finalToken);
       setAuthState(AUTH_STATES.AUTHENTICATED);
-      localStorage.removeItem('bis_pending_verification');
+      try {
+        localStorage.setItem('bis_user', JSON.stringify(finalUser));
+        localStorage.setItem('bis_token', finalToken);
+        localStorage.removeItem('bis_pending_verification');
+      } catch (e) {}
       setPendingVerification(null);
 
       return { isVerified: true, user: finalUser };
@@ -595,8 +579,12 @@ export function useAuth() {
 
         setUser(finalUser);
         setToken(finalToken);
-        setAuthState(AUTH_STATES.EMAIL_VERIFIED);
-        localStorage.removeItem('bis_pending_verification');
+        setAuthState(AUTH_STATES.AUTHENTICATED);
+        try {
+          localStorage.setItem('bis_user', JSON.stringify(finalUser));
+          localStorage.setItem('bis_token', finalToken);
+          localStorage.removeItem('bis_pending_verification');
+        } catch (e) {}
         setPendingVerification(null);
         return { verified: true, user: finalUser };
       }
@@ -770,7 +758,11 @@ export function useAuth() {
     setUser(demoUser);
     setToken('demo-token-12345');
     setAuthState(AUTH_STATES.AUTHENTICATED);
-    localStorage.removeItem('bis_pending_verification');
+    try {
+      localStorage.setItem('bis_user', JSON.stringify(demoUser));
+      localStorage.setItem('bis_token', 'demo-token-12345');
+      localStorage.removeItem('bis_pending_verification');
+    } catch (e) {}
     setPendingVerification(null);
     return demoUser;
   };
@@ -787,7 +779,11 @@ export function useAuth() {
         setUser(data.user);
         setToken(data.access_token);
         setAuthState(AUTH_STATES.AUTHENTICATED);
-        localStorage.removeItem('bis_pending_verification');
+        try {
+          localStorage.setItem('bis_user', JSON.stringify(data.user));
+          localStorage.setItem('bis_token', data.access_token);
+          localStorage.removeItem('bis_pending_verification');
+        } catch (e) {}
         setPendingVerification(null);
         return data.user;
       } else {
@@ -812,22 +808,35 @@ export function useAuth() {
       setAuthState(AUTH_STATES.UNAUTHENTICATED);
       setNeedsOrgOnboarding(false);
       setGoogleNotice(null);
-      localStorage.removeItem('bis_user');
-      localStorage.removeItem('bis_token');
-      localStorage.removeItem('bis_pending_verification');
+      try {
+        localStorage.removeItem('bis_user');
+        localStorage.removeItem('bis_token');
+        localStorage.removeItem('bis_pending_verification');
+      } catch (e) {}
       setPendingVerification(null);
     }
   };
 
+  const updateUserProfile = (updatedUser) => {
+    setUser(updatedUser);
+    try {
+      localStorage.setItem('bis_user', JSON.stringify(updatedUser));
+    } catch (e) {}
+  };
+
   const clearGoogleNotice = () => setGoogleNotice(null);
   const clearPendingVerification = () => {
-    localStorage.removeItem('bis_pending_verification');
+    try {
+      localStorage.removeItem('bis_pending_verification');
+    } catch (e) {}
     setPendingVerification(null);
     setAuthState(AUTH_STATES.UNAUTHENTICATED);
   };
 
   return {
     user,
+    setUser,
+    updateUserProfile,
     token,
     loading,
     googleLoading,

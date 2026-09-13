@@ -106,12 +106,19 @@ export default function App() {
     });
   }, []);
 
-  // Automatically reopen AuthModal if pending verification, Google notice, or org onboarding exists
+  // Automatically reopen AuthModal if pending verification or Google notice exists
   useEffect(() => {
-    if (auth?.pendingVerification || auth?.needsOrgOnboarding || auth?.googleNotice) {
+    if (auth?.pendingVerification || auth?.googleNotice) {
       setAuthModalOpen(true);
     }
-  }, [auth?.pendingVerification, auth?.needsOrgOnboarding, auth?.googleNotice]);
+  }, [auth?.pendingVerification, auth?.googleNotice]);
+
+  // Automatically close AuthModal when user is successfully authenticated
+  useEffect(() => {
+    if (auth?.user && authModalOpen && !auth?.pendingVerification && !auth?.googleNotice) {
+      setAuthModalOpen(false);
+    }
+  }, [auth?.user, authModalOpen, auth?.pendingVerification, auth?.googleNotice]);
 
   const handleOpenEvidence = (ev) => {
     setActiveEvidence(ev);

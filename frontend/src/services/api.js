@@ -143,19 +143,12 @@ export const setAuthSessionToken = (token) => {
 };
 
 export const getAuthSessionToken = () => {
-  return _inMemoryAuthToken;
+  if (_inMemoryAuthToken) return _inMemoryAuthToken;
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('bis_token');
+  }
+  return null;
 };
-
-// Purge any stale legacy persisted user/tokens on startup
-if (typeof window !== 'undefined') {
-  try {
-    localStorage.removeItem('bis_user');
-    localStorage.removeItem('bis_token');
-    localStorage.removeItem('bis_pending_verification');
-    localStorage.removeItem('bis_admin_fallback_store_v2');
-    localStorage.removeItem('bis_admin_mock_store_v1');
-  } catch (e) {}
-}
 
 const getAdminHeaders = () => {
   const token = getAuthSessionToken() || '';
