@@ -115,7 +115,8 @@ async def process_query(
             context_chunks=retrieved_chunks,
             mode=mode,
             is_bis=True,
-            history=effective_history
+            history=effective_history,
+            target_language=effective_lang
         )
         reported_confidence = comp_data.get("ai_confidence_score") or calculate_confidence(retrieved_chunks)
         product_profile = prod_data.get("product_profile")
@@ -130,7 +131,8 @@ async def process_query(
             context_chunks=[],
             mode=mode,
             is_bis=False,
-            history=effective_history
+            history=effective_history,
+            target_language=effective_lang
         )
         reported_confidence = None
         product_profile = None
@@ -216,7 +218,8 @@ async def stream_process_query(
             query=query,
             context_chunks=retrieved_chunks,
             mode=mode,
-            history=effective_history
+            history=effective_history,
+            target_language=effective_lang
         ):
             accumulated_chunks.append(token)
             yield f"data: {json.dumps({'type': 'token', 'content': token, 'done': False})}\n\n"
@@ -228,7 +231,11 @@ async def stream_process_query(
         effective_mode = "rag"
     else:
         from app.services.generator import stream_general_llm_answer
-        async for token in stream_general_llm_answer(query=query, history=effective_history):
+        async for token in stream_general_llm_answer(
+            query=query,
+            history=effective_history,
+            target_language=effective_lang
+        ):
             accumulated_chunks.append(token)
             yield f"data: {json.dumps({'type': 'token', 'content': token, 'done': False})}\n\n"
 

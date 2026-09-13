@@ -35,8 +35,8 @@ export class GeminiService {
    * Universal Balanced System Prompt for BIS Sahayak V2 powered by Google Gemini
    * Answers ANY question accurately like a modern Google LLM, with deep BIS expertise when relevant.
    */
-  getSystemPrompt(mode = "auto") {
-    return (
+  getSystemPrompt(mode = "auto", language = "auto") {
+    let prompt = (
       "You are BIS Sahayak V2, an intelligent AI compliance assistant powered by Google Gemini. You are a versatile, helpful, and highly knowledgeable AI capable of answering ANY type of question accurately—from general knowledge, science, coding, math, history, everyday conversation, to specialized Bureau of Indian Standards (BIS) product compliance and statutory HSN regulations.\n\n" +
       "Guidelines:\n" +
       "1. GENERAL QUESTIONS & CONVERSATION: Answer naturally, thoroughly, accurately, and directly like a modern Google LLM. Provide clear explanations, code, step-by-step reasoning, or answers to whatever the user asks. Do NOT refuse general questions or force BIS topics onto unrelated questions.\n" +
@@ -44,6 +44,29 @@ export class GeminiService {
       "3. TONE & FORMAT: Be helpful, professional, and clear. Format responses using clean Markdown with bolding, lists, and tables where appropriate.\n" +
       "4. Never invent nonexistent IS standards, clauses, or legal mandates. If a statutory detail is unverified, advise official verification on manakonline.in."
     );
+    if (language && language !== 'auto' && language !== 'en') {
+      const INDIC_NAMES = {
+        hi: "Hindi (हिंदी - Devanagari script)",
+        ta: "Tamil (தமிழ் - Tamil script)",
+        te: "Telugu (తెలుగు - Telugu script)",
+        bn: "Bengali (বাংলা - Bengali script)",
+        mr: "Marathi (मराठी - Devanagari script)",
+        gu: "Gujarati (ગુજરાતી - Gujarati script)",
+        kn: "Kannada (ಕನ್ನಡ - Kannada script)",
+        ml: "Malayalam (മലയാളം - Malayalam script)",
+        pa: "Punjabi (ਪੰਜਾਬੀ - Gurmukhi script)",
+        or: "Odia (ଓଡ଼ିଆ - Odia script)",
+        as: "Assamese (অসমীয়া - Assamese script)",
+        ur: "Urdu (اردو - Urdu/Nastaliq script)",
+        ne: "Nepali (नेपाली - Devanagari script)",
+        sa: "Sanskrit (संस्कृतम् - Devanagari script)",
+        kok: "Konkani (कोंकणी - Devanagari script)",
+        mai: "Maithili (मैथिली - Devanagari script)"
+      };
+      const langDesc = INDIC_NAMES[language.toLowerCase()] || language;
+      prompt += `\n\n🚨 CRITICAL MANDATORY LANGUAGE DIRECTIVE:\nThe user has chosen ${langDesc}. EVEN IF the user query is written in English, you MUST generate your ENTIRE response in this selected language using its authentic native script. Keep IS standard numbers (e.g. IS 2347:2017) and licence numbers (e.g. CM/L-7128394) in English/Latin, but formulate all explanations, headings, and descriptions in ${langDesc}.`;
+    }
+    return prompt;
   }
 
   /**
@@ -132,7 +155,7 @@ export class GeminiService {
   /**
    * Build multi-turn contents array for Google GenAI SDK
    */
-  buildContents({ query, history = [], contextChunks = [] }) {
+  buildContents({ query, history = [], contextChunks = [], language = "auto" }) {
     const contents = [];
 
     // Format previous turns
@@ -164,6 +187,10 @@ export class GeminiService {
         `3. Statutory BIS & QCO Scope: Explain applicable Indian Standards (IS), mandatory Quality Control Orders (QCOs), and licensing requirements if notified by the Government of India.\n` +
         `4. Cite the official Standard/HSN source and clauses.`
       );
+    }
+
+    if (language && language !== 'auto' && language !== 'en') {
+      latestText = `[CRITICAL DIRECTIVE: The user selected language "${language}". Formulate your complete answer in that language using its native script, even though the user input is in English.]\n\n` + latestText;
     }
 
     contents.push({
@@ -203,7 +230,7 @@ export class GeminiService {
   /**
    * Synchronous / Non-streaming Gemini Chat Completion
    */
-  async chatCompletion({ query, history = [], mode = "simple", contextChunks = [], enableSearch = false }) {
+  async chatCompletion({ query, history = [], mode = "simple", contextChunks = [], enableSearch = false, language = "auto" }) {
     if (!this.isAvailable()) {
       return {
         answer: `I am your Gemini AI assistant. (Please configure GEMINI_API_KEY in backend .env). How can I assist you with: "${query}"?`,
@@ -218,9 +245,9 @@ export class GeminiService {
     let response;
     let usedSearch = false;
 
-    const contents = this.buildContents({ query, history, contextChunks });
+    const contents = this.buildContents({ query, history, contextChunks, language });
     const config = {
-      systemInstruction: this.getSystemPrompt(mode),
+      systemInstruction: this.getSystemPrompt(mode, language),
       temperature: this.temperature
     };
 
@@ -281,11 +308,11 @@ export class GeminiService {
   /**
    * Real-time Server-Sent Events (SSE) Streaming Completion
    */
-  async streamCompletion({ query, history = [], mode = "simple", contextChunks = [], res, onChunk, onDone, enableSearch = false }) {
+  async streamCompletion({ query, history = [], mode = "simple", contextChunks = [], res, onChunk, onDone, enableSearch = false, language = "auto" }) {
     if (!this.isAvailable()) {
       const fallback = `I am your Gemini AI assistant. How can I assist you with: "${query}"? (Please configure GEMINI_API_KEY in backend .env).`;
       res.write(`data: ${JSON.stringify({ type: 'token', content: fallback })}\n\n`);
-      res.write(`data: ${JSON.stringify({ type: 'done', mode: 'gemini', confidence: null, citations: [], done: true })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'done', mode: 'gemini', confidence: null, citations: [], language: language || 'auto', processing_time: 0.1, done: true })}\n\n`);
       res.end();
       if (onDone) onDone(fallback, { mode: 'gemini', confidence: null, citations: [] });
       return;
@@ -296,11 +323,11 @@ export class GeminiService {
     let fullText = '';
     let lastCandidate = null;
 
-    const contents = this.buildContents({ query, history, contextChunks });
+    const contents = this.buildContents({ query, history, contextChunks, language });
 
     const tryStream = async (withSearch) => {
       const config = {
-        systemInstruction: this.getSystemPrompt(mode),
+        systemInstruction: this.getSystemPrompt(mode, language),
         temperature: this.temperature,
       };
       if (withSearch) {

@@ -83,7 +83,8 @@ export const sendChat = async (req, res) => {
           history,
           mode: hasRelevantChunks ? 'rag' : 'gemini',
           contextChunks: hasRelevantChunks ? contextChunks : [],
-          enableSearch: true
+          enableSearch: true,
+          language: language || 'auto'
         });
         finalResult.mode = hasRelevantChunks ? 'gemini (rag)' : 'gemini';
       } catch (geminiErr) {
@@ -258,6 +259,7 @@ export const streamChat = async (req, res) => {
           contextChunks: hasRelevantChunks ? contextChunks : [],
           res,
           enableSearch: true,
+          language: language || 'auto',
           onDone: (content, meta) => {
             chatService.saveMessage({
               sessionId,

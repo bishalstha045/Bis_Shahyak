@@ -43,6 +43,54 @@ BIS_RAG_SYSTEM_INSTRUCTION = (
     "   - 5. Recommended Next Best Action"
 )
 
+INDIC_LANGUAGES_MAP = {
+    "hi": ("Hindi", "हिंदी", "Devanagari"),
+    "ta": ("Tamil", "தமிழ்", "Tamil"),
+    "te": ("Telugu", "తెలుగు", "Telugu"),
+    "bn": ("Bengali", "বাংলা", "Bengali"),
+    "mr": ("Marathi", "मराठी", "Devanagari"),
+    "gu": ("Gujarati", "ગુજરાતી", "Gujarati"),
+    "kn": ("Kannada", "ಕನ್ನಡ", "Kannada"),
+    "ml": ("Malayalam", "മലയാളം", "Malayalam"),
+    "pa": ("Punjabi", "ਪੰਜਾਬੀ", "Gurmukhi"),
+    "or": ("Odia", "ଓଡ଼ିଆ", "Odia"),
+    "as": ("Assamese", "অসমীয়া", "Assamese"),
+    "ur": ("Urdu", "اردو", "Urdu"),
+    "ne": ("Nepali", "नेपाली", "Devanagari"),
+    "sa": ("Sanskrit", "संस्कृतम्", "Devanagari"),
+    "kok": ("Konkani", "कोंकणी", "Devanagari"),
+    "mai": ("Maithili", "मैथिली", "Devanagari"),
+    "en": ("English", "English", "Latin")
+}
+
+def get_target_language_instruction(target_language: str) -> str:
+    """
+    Build strong language directive for Google Gemini and other LLMs.
+    Guarantees that if user selects Hindi, Tamil, Telugu, etc., Gemini responds
+    in that exact language and script, even if the user message was typed in English.
+    """
+    if not target_language or target_language.lower() in ("en", "auto"):
+        return ""
+    
+    lang_info = INDIC_LANGUAGES_MAP.get(target_language.lower())
+    if not lang_info:
+        return ""
+    
+    eng_name, native_name, script = lang_info
+    return (
+        f"\n\n========================================\n"
+        f"🚨 MANDATORY LANGUAGE DIRECTIVE:\n"
+        f"The user has actively selected {eng_name} ({native_name}) as their interface and response language.\n"
+        f"EVEN IF the user's message is written entirely in English, you MUST generate your ENTIRE response in {eng_name} ({native_name}) using authentic {script} script.\n"
+        f"DO NOT generate the response in English.\n"
+        f"STRICT EXCEPTIONS TO LEAVE IN ENGLISH/LATIN SCRIPT:\n"
+        f"- Standard designations: e.g., 'IS 2347:2017', 'IS 17803:2022', 'IS 302-2-15'\n"
+        f"- Licence and clause IDs: e.g., 'CM/L-7128394', 'Clause 4.1', 'Clause 6.1'\n"
+        f"- Official portals and terms: e.g., 'www.manakonline.in', 'NABL', 'QCO', 'BIS'\n"
+        f"All other sentences, explanations, bullet points, recommendations, and analysis MUST be written fluently and idiomatically in {native_name}.\n"
+        f"========================================\n"
+    )
+
 def _build_gemini_contents(
     query: str,
     history: Optional[List[Dict[str, Any]]] = None,
@@ -260,7 +308,8 @@ def extract_citations(
 def generate_v2_grounded_answer(
     query: str,
     context_chunks: List[Dict[str, Any]],
-    mode: str = "simple"
+    mode: str = "simple",
+    target_language: str = "en"
 ) -> Tuple[str, Dict[str, Any]]:
     """
     Local Evidence-First Grounded Response Synthesizer:
@@ -274,6 +323,8 @@ def generate_v2_grounded_answer(
     app_stds = prod_data.get("applicable_standards", [])
     primary_std = app_stds[0] if app_stds else None
 
+    is_hindi = (target_language == "hi") or bool(re.search(r'[\u0900-\u097F]', query)) or "के बारे में" in query
+
     # Handle smalltalk / greeting or questions with no matched standard
     if not primary_std and not context_chunks:
         clean_q = query.strip().lower()
@@ -284,29 +335,50 @@ def generate_v2_grounded_answer(
         ]
         is_greeting = any(w in clean_q for w in greeting_words)
         if is_greeting:
-            answer = (
-                "Namaste! 🙏 I am **BIS Sahayak V2** (बीआईएस सहायक), your AI-powered Bureau of Indian Standards compliance navigator.\n\n"
-                "I can assist you with:\n"
-                "- Finding applicable Indian Standards (IS codes) for your manufactured products\n"
-                "- Understanding mandatory Quality Control Orders (QCOs) and compliance deadlines\n"
-                "- Testing requirements, safety clauses, and NABL lab protocols\n"
-                "- Verifying ISI / CML mark licenses and applying on Manakonline\n\n"
-                "How can I assist you with quality standards and compliance today?"
-            )
+            if is_hindi:
+                answer = (
+                    "नमस्ते! 🙏 मैं **BIS सहायक V2** हूँ, भारतीय मानक ब्यूरो (BIS) के लिए आपका आधिकारिक AI अनुपालन नेविगेटर।\n\n"
+                    "मैं निम्नलिखित विषयों में आपकी सहायता कर सकता हूँ:\n"
+                    "- आपके उत्पाद के लिए लागू भारतीय मानक (IS कोड) खोजना\n"
+                    "- अनिवार्य गुणवत्ता नियंत्रण आदेश (QCOs) और समय-सीमा समझना\n"
+                    "- अनिवार्य परीक्षण आवश्यकताएँ, सुरक्षा खंड और NABL लैब प्रक्रियाएँ\n"
+                    "- ISI / CML लाइसेंस सत्यापन और Manakonline पर ऑनलाइन आवेदन\n\n"
+                    "आज मैं आपकी किस प्रकार सहायता कर सकता हूँ?"
+                )
+            else:
+                answer = (
+                    "Namaste! 🙏 I am **BIS Sahayak V2** (बीआईएस सहायक), your AI-powered Bureau of Indian Standards compliance navigator.\n\n"
+                    "I can assist you with:\n"
+                    "- Finding applicable Indian Standards (IS codes) for your manufactured products\n"
+                    "- Understanding mandatory Quality Control Orders (QCOs) and compliance deadlines\n"
+                    "- Testing requirements, safety clauses, and NABL lab protocols\n"
+                    "- Verifying ISI / CML mark licenses and applying on Manakonline\n\n"
+                    "How can I assist you with quality standards and compliance today?"
+                )
         else:
-            answer = (
-                f"### Bureau of Indian Standards (BIS) Guidance\n\n"
-                f"Regarding: **{query}**\n\n"
-                f"The **Bureau of Indian Standards (BIS)** operates under the BIS Act, 2016 to formulate national standards, implement mandatory Quality Control Orders (QCOs), and oversee product certification schemes (ISI Mark, CRS, Hallmarking).\n\n"
-                f"**Key Next Steps:**\n"
-                f"- **Search Standards:** Search the comprehensive 22,000+ standards directory at [www.manakonline.in](https://www.manakonline.in)\n"
-                f"- **Product Certification:** Apply under Scheme-I for mandatory ISI marking\n"
-                f"- **MSME & Startup Benefits:** Eligible enterprises receive a 50% concession on marking and audit fees\n"
-                f"- **National BIS Helpline:** Call toll-free **1800-11-4000** for direct support."
-            )
+            if is_hindi:
+                answer = (
+                    f"### भारतीय मानक ब्यूरो (BIS) मार्गदर्शन\n\n"
+                    f"विषय: **{query}**\n\n"
+                    f"**भारतीय मानक ब्यूरो (BIS)** बीआईएस अधिनियम, 2016 के तहत राष्ट्रीय मानक तैयार करता है, अनिवार्य गुणवत्ता नियंत्रण आदेश (QCOs) लागू करता है, और उत्पाद प्रमाणन (ISI मार्क, CRS, हॉलमार्किंग) की निगरानी करता है।\n\n"
+                    f"**प्रमुख अगले कदम:**\n"
+                    f"- **मानक खोजें:** [www.manakonline.in](https://www.manakonline.in) पर 22,000+ मानकों की निर्देशिका देखें\n"
+                    "- **उत्पाद प्रमाणन:** अनिवार्य ISI मार्किंग हेतु स्कीम-I के तहत आवेदन करें\n"
+                    "- **MSME लाभ:** पात्र उद्यमों को लाइसेंसिंग शुल्क में 50% छूट प्राप्त होती है\n"
+                    "- **राष्ट्रीय हेल्पलाइन:** निःशुल्क सहायता के लिए **1800-11-4000** पर संपर्क करें।"
+                )
+            else:
+                answer = (
+                    f"### Bureau of Indian Standards (BIS) Guidance\n\n"
+                    f"Regarding: **{query}**\n\n"
+                    f"The **Bureau of Indian Standards (BIS)** operates under the BIS Act, 2016 to formulate national standards, implement mandatory Quality Control Orders (QCOs), and oversee product certification schemes (ISI Mark, CRS, Hallmarking).\n\n"
+                    f"**Key Next Steps:**\n"
+                    f"- **Search Standards:** Search the comprehensive 22,000+ standards directory at [www.manakonline.in](https://www.manakonline.in)\n"
+                    f"- **Product Certification:** Apply under Scheme-I for mandatory ISI marking\n"
+                    f"- **MSME & Startup Benefits:** Eligible enterprises receive a 50% concession on marking and audit fees\n"
+                    f"- **National BIS Helpline:** Call toll-free **1800-11-4000** for direct support."
+                )
         return answer, comp_data
-
-    is_hindi = bool(re.search(r'[\u0900-\u097F]', query)) or "के बारे में" in query
 
     # Real compliance metrics from compliance engine
     readiness_score = comp_data.get("compliance_readiness_score", 0)
@@ -314,7 +386,7 @@ def generate_v2_grounded_answer(
     review_c = comp_data.get("review_count", 0)
     missing_c = comp_data.get("missing_count", 0)
     total_reqs = comp_data.get("total_requirements", len(comp_data.get("matrix", [])))
-    next_step = comp_data.get("next_best_action") or "BIS मानक पोर्टल www.manakonline.in पर ऑनलाइन आवेदन करें।"
+    next_step = comp_data.get("next_best_action") or ("BIS मानक पोर्टल www.manakonline.in पर ऑनलाइन आवेदन करें।" if is_hindi else "Verify standards on Manakonline.")
 
     if is_hindi and primary_std:
         std_id = primary_std.get("standard_id", "IS Standard")
@@ -518,7 +590,8 @@ async def _stream_gemini_with_fallback(client, contents, config):
 
 async def stream_general_llm_answer(
     query: str,
-    history: Optional[List[Dict[str, Any]]] = None
+    history: Optional[List[Dict[str, Any]]] = None,
+    target_language: str = "en"
 ):
     """
     Real-time streaming from Google Gemini for ANY general question:
@@ -534,12 +607,20 @@ async def stream_general_llm_answer(
         from google.genai import types
 
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        lang_instruction = get_target_language_instruction(target_language)
+        system_instruction = GENERAL_SYSTEM_INSTRUCTION + lang_instruction
+
         config = types.GenerateContentConfig(
-            system_instruction=GENERAL_SYSTEM_INSTRUCTION,
+            system_instruction=system_instruction,
             temperature=0.7,
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
         )
-        contents = _build_gemini_contents(query=query, history=history)
+        prefix_block = None
+        if lang_instruction:
+            lang_info = INDIC_LANGUAGES_MAP.get(target_language.lower(), ("the selected language", "स्थानीय भाषा", ""))
+            prefix_block = f"[IMPORTANT DIRECTIVE: Respond completely in {lang_info[0]} ({lang_info[1]}) using native script, even though the query is in English.]"
+
+        contents = _build_gemini_contents(query=query, history=history, context_prefix=prefix_block)
         async for token in _stream_gemini_with_fallback(client, contents, config):
             yield token
     except Exception as e:
@@ -550,7 +631,8 @@ async def stream_rag_answer(
     query: str,
     context_chunks: List[Dict[str, Any]],
     mode: str = "simple",
-    history: Optional[List[Dict[str, Any]]] = None
+    history: Optional[List[Dict[str, Any]]] = None,
+    target_language: str = "en"
 ):
     """
     Real-time streaming RAG-augmented Google Gemini response for BIS queries.
@@ -601,16 +683,24 @@ async def stream_rag_answer(
             )
             context_block = "\n\n".join(evidence_lines) + compliance_summary
 
+            lang_instruction = get_target_language_instruction(target_language)
+            system_instruction = BIS_RAG_SYSTEM_INSTRUCTION + lang_instruction
+
             config = types.GenerateContentConfig(
-                system_instruction=BIS_RAG_SYSTEM_INSTRUCTION,
+                system_instruction=system_instruction,
                 temperature=settings.LLM_TEMPERATURE,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
             )
 
+            prefix_block = f"Verified Evidence Context:\n{context_block}"
+            if lang_instruction:
+                lang_info = INDIC_LANGUAGES_MAP.get(target_language.lower(), ("the selected language", "स्थानीय भाषा", ""))
+                prefix_block += f"\n\n[IMPORTANT DIRECTIVE: Respond completely in {lang_info[0]} ({lang_info[1]}) using native script, even though the query is in English.]"
+
             contents = _build_gemini_contents(
                 query=query,
                 history=history,
-                context_prefix=f"Verified Evidence Context:\n{context_block}"
+                context_prefix=prefix_block
             )
 
             async for token in _stream_gemini_with_fallback(client, contents, config):
@@ -620,7 +710,7 @@ async def stream_rag_answer(
             logger.error(f"[RAG Gemini Stream Exception]: {e}", exc_info=True)
             if primary_std or context_chunks:
                 logger.info("[RAG Fallback]: Streaming local grounded synthesizer response.")
-                answer, _ = generate_v2_grounded_answer(query, context_chunks, mode)
+                answer, _ = generate_v2_grounded_answer(query, context_chunks, mode, target_language=target_language)
                 words = answer.split(" ")
                 for i, w in enumerate(words):
                     yield w + (" " if i < len(words) - 1 else "")
@@ -631,7 +721,7 @@ async def stream_rag_answer(
                 return
 
     # Fallback if no API key
-    answer, _ = generate_v2_grounded_answer(query, context_chunks, mode)
+    answer, _ = generate_v2_grounded_answer(query, context_chunks, mode, target_language=target_language)
     words = answer.split(" ")
     for i, w in enumerate(words):
         yield w + (" " if i < len(words) - 1 else "")
@@ -640,7 +730,8 @@ async def stream_rag_answer(
 
 async def generate_general_llm_answer(
     query: str,
-    history: Optional[List[Dict[str, Any]]] = None
+    history: Optional[List[Dict[str, Any]]] = None,
+    target_language: str = "en"
 ) -> Tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
     """
     Direct Google Gemini LLM answering for ANY general question:
@@ -659,14 +750,21 @@ async def generate_general_llm_answer(
         from google.genai import types
 
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        lang_instruction = get_target_language_instruction(target_language)
+        system_instruction = GENERAL_SYSTEM_INSTRUCTION + lang_instruction
 
         config = types.GenerateContentConfig(
-            system_instruction=GENERAL_SYSTEM_INSTRUCTION,
+            system_instruction=system_instruction,
             temperature=0.7,
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
         )
 
-        contents = _build_gemini_contents(query=query, history=history)
+        prefix_block = None
+        if lang_instruction:
+            lang_info = INDIC_LANGUAGES_MAP.get(target_language.lower(), ("the selected language", "स्थानीय भाषा", ""))
+            prefix_block = f"[IMPORTANT DIRECTIVE: Respond completely in {lang_info[0]} ({lang_info[1]}) using native script, even though the query is in English.]"
+
+        contents = _build_gemini_contents(query=query, history=history, context_prefix=prefix_block)
         response = await _call_gemini_with_fallback(client, contents, config)
         ans = _parse_gemini_response(response)
         if ans:
@@ -683,7 +781,8 @@ async def generate_rag_answer(
     query: str,
     context_chunks: List[Dict[str, Any]],
     mode: str = "simple",
-    history: Optional[List[Dict[str, Any]]] = None
+    history: Optional[List[Dict[str, Any]]] = None,
+    target_language: str = "en"
 ) -> Tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
     """
     RAG-augmented Google Gemini response for Bureau of Indian Standards (BIS) queries.
@@ -736,16 +835,24 @@ async def generate_rag_answer(
             )
             context_block = "\n\n".join(evidence_lines) + compliance_summary
 
+            lang_instruction = get_target_language_instruction(target_language)
+            system_instruction = BIS_RAG_SYSTEM_INSTRUCTION + lang_instruction
+
             config = types.GenerateContentConfig(
-                system_instruction=BIS_RAG_SYSTEM_INSTRUCTION,
+                system_instruction=system_instruction,
                 temperature=settings.LLM_TEMPERATURE,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
             )
 
+            prefix_block = f"Verified Evidence Context:\n{context_block}"
+            if lang_instruction:
+                lang_info = INDIC_LANGUAGES_MAP.get(target_language.lower(), ("the selected language", "स्थानीय भाषा", ""))
+                prefix_block += f"\n\n[IMPORTANT DIRECTIVE: Respond completely in {lang_info[0]} ({lang_info[1]}) using native script, even though the query is in English.]"
+
             contents = _build_gemini_contents(
                 query=query,
                 history=history,
-                context_prefix=f"Verified Evidence Context:\n{context_block}"
+                context_prefix=prefix_block
             )
 
             response = await _call_gemini_with_fallback(client, contents, config)
@@ -762,20 +869,21 @@ async def generate_rag_answer(
             # Fallback to local grounded synthesizer if standard or context chunks exist, else report real API error
             if primary_std or context_chunks:
                 logger.info("[RAG Fallback]: Using local grounded synthesizer.")
-                answer, comp_data = generate_v2_grounded_answer(query, context_chunks, mode)
+                answer, comp_data = generate_v2_grounded_answer(query, context_chunks, mode, target_language=target_language)
                 citations = extract_citations(answer, context_chunks, primary_std=primary_std)
                 return answer, citations, comp_data
             else:
                 return f"**Gemini API Error:** {err_msg}. Please check your connection or Gemini API key.", [], comp_data
 
     # Fallback to local grounded synthesizer if API key is missing
-    answer, comp_data = generate_v2_grounded_answer(query, context_chunks, mode)
+    answer, comp_data = generate_v2_grounded_answer(query, context_chunks, mode, target_language=target_language)
     citations = extract_citations(answer, context_chunks, primary_std=primary_std)
     return answer, citations, comp_data
 
 async def generate_groq_answer(
     query: str,
-    history: Optional[List[Dict[str, Any]]] = None
+    history: Optional[List[Dict[str, Any]]] = None,
+    target_language: str = "en"
 ) -> Tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
     """Groq LLM answering for general conversational / smalltalk queries."""
     groq_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
@@ -792,12 +900,8 @@ async def generate_groq_answer(
                 if m and m not in valid_models:
                     valid_models.append(m)
 
-            system_msg = (
-                "You are BIS Sahayak, an intelligent AI assistant. "
-                "Answer the user's question clearly, naturally, and accurately like a capable LLM. "
-                "For general questions, greetings, or programming/science questions, answer directly with clean markdown formatting. "
-                "Never fabricate IS numbers or mandatory regulations."
-            )
+            lang_instruction = get_target_language_instruction(target_language)
+            system_msg = GENERAL_SYSTEM_INSTRUCTION + lang_instruction
 
             messages = [{"role": "system", "content": system_msg}]
             if history:
@@ -830,14 +934,15 @@ async def generate_groq_answer(
             logger.warning(f"[Groq API warning] {ge}")
 
     # Fallback directly to general Gemini
-    return await generate_general_llm_answer(query, history=history)
+    return await generate_general_llm_answer(query, history=history, target_language=target_language)
 
 async def generate_answer(
     query: str,
     context_chunks: List[Dict[str, Any]],
     mode: str = "simple",
     is_bis: bool = True,
-    history: Optional[List[Dict[str, Any]]] = None
+    history: Optional[List[Dict[str, Any]]] = None,
+    target_language: str = "en"
 ) -> Tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
     """
     Universal Gemini entry point:
@@ -846,6 +951,6 @@ async def generate_answer(
     Maintains multi-turn conversation memory when history is provided.
     """
     if is_bis:
-        return await generate_rag_answer(query, context_chunks, mode, history=history)
+        return await generate_rag_answer(query, context_chunks, mode, history=history, target_language=target_language)
     else:
-        return await generate_general_llm_answer(query, history=history)
+        return await generate_general_llm_answer(query, history=history, target_language=target_language)

@@ -94,15 +94,19 @@ export function useFullPageTranslation(currentLanguage) {
     }
 
     // Translate DOM for selected Bhashini language
-    const triggerTranslation = () => {
+    const triggerTranslation = (immediate = false) => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(() => {
-        translatePageDOM(rootEl, currentLanguage);
-      }, 120);
+      if (immediate) {
+        translatePageDOM(rootEl, currentLanguage, isTranslatingRef);
+      } else {
+        debounceTimerRef.current = setTimeout(() => {
+          translatePageDOM(rootEl, currentLanguage, isTranslatingRef);
+        }, 80);
+      }
     };
 
-    // Initial translation run on language switch
-    triggerTranslation();
+    // Initial translation run on language switch: instant zero-delay execution
+    triggerTranslation(true);
 
     // Observe DOM changes (page/tab navigation, modal openings, chat messages)
     const observer = new MutationObserver((mutations) => {
@@ -123,7 +127,7 @@ export function useFullPageTranslation(currentLanguage) {
       }
 
       if (hasMeaningfulChange) {
-        triggerTranslation();
+        triggerTranslation(false);
       }
     });
 
@@ -173,137 +177,147 @@ function restoreOriginalText(root) {
  * Traverses DOM text nodes, applies cached translations instantly,
  * and batches remaining untranslated strings through Bhashini NMT.
  */
-async function translatePageDOM(root, targetLang) {
+async function translatePageDOM(root, targetLang, isTranslatingRef) {
   if (!root || !targetLang || targetLang === 'en') return;
 
-  const pendingBatch = new Set();
-  const textNodeQueue = [];
-  const placeholderQueue = [];
+  if (isTranslatingRef) isTranslatingRef.current = true;
 
-  const walker = document.createTreeWalker(
-    root,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode(node) {
-        const parent = node.parentElement;
-        if (!parent) return NodeFilter.FILTER_REJECT;
+  try {
+    const pendingBatch = new Set();
+    const textNodeQueue = [];
+    const placeholderQueue = [];
 
-        const tagName = parent.tagName.toUpperCase();
-        if (
-          tagName === 'SCRIPT' ||
-          tagName === 'STYLE' ||
-          tagName === 'CODE' ||
-          tagName === 'PRE' ||
-          tagName === 'NOSCRIPT' ||
-          tagName === 'SVG' ||
-          tagName === 'PATH' ||
-          parent.getAttribute('translate') === 'no' ||
-          parent.classList?.contains('no-translate')
-        ) {
-          return NodeFilter.FILTER_REJECT;
+    const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          const parent = node.parentElement;
+          if (!parent) return NodeFilter.FILTER_REJECT;
+
+          const tagName = parent.tagName.toUpperCase();
+          if (
+            tagName === 'SCRIPT' ||
+            tagName === 'STYLE' ||
+            tagName === 'CODE' ||
+            tagName === 'PRE' ||
+            tagName === 'NOSCRIPT' ||
+            tagName === 'SVG' ||
+            tagName === 'PATH' ||
+            parent.getAttribute('translate') === 'no' ||
+            parent.classList?.contains('no-translate')
+          ) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          const raw = node.nodeValue;
+          if (shouldSkipText(raw)) return NodeFilter.FILTER_REJECT;
+
+          return NodeFilter.FILTER_ACCEPT;
         }
+      },
+      false
+    );
 
-        const raw = node.nodeValue;
-        if (shouldSkipText(raw)) return NodeFilter.FILTER_REJECT;
-
-        return NodeFilter.FILTER_ACCEPT;
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!originalTextMap.has(node)) {
+        originalTextMap.set(node, node.nodeValue);
       }
-    },
-    false
-  );
 
-  let node;
-  while ((node = walker.nextNode())) {
-    if (!originalTextMap.has(node)) {
-      originalTextMap.set(node, node.nodeValue);
-    }
+      const orig = originalTextMap.get(node);
+      const trimmed = orig.trim();
+      if (shouldSkipText(trimmed)) continue;
 
-    const orig = originalTextMap.get(node);
-    const trimmed = orig.trim();
-    if (shouldSkipText(trimmed)) continue;
-
-    const cacheKey = `${targetLang}:${trimmed}`;
-    if (memoryCache.has(cacheKey)) {
-      // Instant in-memory replacement (zero latency)
-      const translated = memoryCache.get(cacheKey);
-      const replaced = orig.replace(trimmed, translated);
-      if (node.nodeValue !== replaced) {
-        node.nodeValue = replaced;
-      }
-    } else {
-      pendingBatch.add(trimmed);
-      textNodeQueue.push({ node, orig, trimmed });
-    }
-  }
-
-  // Handle placeholders in input / textarea
-  const inputs = root.querySelectorAll('input[placeholder], textarea[placeholder]');
-  inputs.forEach((input) => {
-    if (!originalPlaceholderMap.has(input)) {
-      originalPlaceholderMap.set(input, input.placeholder);
-    }
-    const origPh = originalPlaceholderMap.get(input);
-    const trimmed = origPh ? origPh.trim() : '';
-    if (trimmed && !shouldSkipText(trimmed)) {
       const cacheKey = `${targetLang}:${trimmed}`;
       if (memoryCache.has(cacheKey)) {
-        input.placeholder = memoryCache.get(cacheKey);
+        // Instant in-memory replacement (zero latency)
+        const translated = memoryCache.get(cacheKey);
+        const replaced = orig.replace(trimmed, translated);
+        if (node.nodeValue !== replaced) {
+          node.nodeValue = replaced;
+        }
       } else {
         pendingBatch.add(trimmed);
-        placeholderQueue.push({ input, origPh, trimmed });
+        textNodeQueue.push({ node, orig, trimmed });
       }
     }
-  });
 
-  if (pendingBatch.size === 0) return;
-
-  // Batch translate uncached phrases via Bhashini
-  const uniqueTexts = Array.from(pendingBatch);
-  const CHUNK_SIZE = 40; // Max items per request to keep payload lean
-
-  for (let i = 0; i < uniqueTexts.length; i += CHUNK_SIZE) {
-    const batch = uniqueTexts.slice(i, i + CHUNK_SIZE);
-    const joinedText = batch.join('\n');
-
-    try {
-      const res = await translateText({
-        text: joinedText,
-        source_language: 'en',
-        target_language: targetLang
-      });
-
-      if (res) {
-        const translatedLines = res.split('\n');
-        batch.forEach((origText, idx) => {
-          const trans = translatedLines[idx] || origText;
-          if (trans && trans.trim()) {
-            memoryCache.set(`${targetLang}:${origText}`, trans.trim());
-          }
-        });
-
-        // Apply newly translated batch to active text nodes
-        textNodeQueue.forEach(({ node, orig, trimmed }) => {
-          const trans = memoryCache.get(`${targetLang}:${trimmed}`);
-          if (trans) {
-            const replaced = orig.replace(trimmed, trans);
-            if (node.nodeValue !== replaced) {
-              node.nodeValue = replaced;
-            }
-          }
-        });
-
-        // Apply newly translated batch to placeholders
-        placeholderQueue.forEach(({ input, trimmed }) => {
-          const trans = memoryCache.get(`${targetLang}:${trimmed}`);
-          if (trans) {
-            input.placeholder = trans;
-          }
-        });
-
-        persistCache();
+    // Handle placeholders in input / textarea
+    const inputs = root.querySelectorAll('input[placeholder], textarea[placeholder]');
+    inputs.forEach((input) => {
+      if (!originalPlaceholderMap.has(input)) {
+        originalPlaceholderMap.set(input, input.placeholder);
       }
-    } catch (err) {
-      console.warn('[FullPageTranslation] Batch error:', err);
+      const origPh = originalPlaceholderMap.get(input);
+      const trimmed = origPh ? origPh.trim() : '';
+      if (trimmed && !shouldSkipText(trimmed)) {
+        const cacheKey = `${targetLang}:${trimmed}`;
+        if (memoryCache.has(cacheKey)) {
+          input.placeholder = memoryCache.get(cacheKey);
+        } else {
+          pendingBatch.add(trimmed);
+          placeholderQueue.push({ input, origPh, trimmed });
+        }
+      }
+    });
+
+    if (pendingBatch.size === 0) return;
+
+    // Batch translate uncached phrases via Bhashini in parallel
+    const uniqueTexts = Array.from(pendingBatch);
+    const CHUNK_SIZE = 35;
+    const batches = [];
+    for (let i = 0; i < uniqueTexts.length; i += CHUNK_SIZE) {
+      batches.push(uniqueTexts.slice(i, i + CHUNK_SIZE));
     }
+
+    await Promise.all(
+      batches.map(async (batch) => {
+        const joinedText = batch.join('\n');
+        try {
+          const res = await translateText({
+            text: joinedText,
+            source_language: 'en',
+            target_language: targetLang
+          });
+
+          if (res) {
+            const translatedLines = res.split('\n');
+            batch.forEach((origText, idx) => {
+              const trans = translatedLines[idx] || origText;
+              if (trans && trans.trim()) {
+                memoryCache.set(`${targetLang}:${origText}`, trans.trim());
+              }
+            });
+
+            // Apply newly translated batch to active text nodes
+            textNodeQueue.forEach(({ node, orig, trimmed }) => {
+              const trans = memoryCache.get(`${targetLang}:${trimmed}`);
+              if (trans) {
+                const replaced = orig.replace(trimmed, trans);
+                if (node.nodeValue !== replaced) {
+                  node.nodeValue = replaced;
+                }
+              }
+            });
+
+            // Apply newly translated batch to placeholders
+            placeholderQueue.forEach(({ input, trimmed }) => {
+              const trans = memoryCache.get(`${targetLang}:${trimmed}`);
+              if (trans) {
+                input.placeholder = trans;
+              }
+            });
+
+            persistCache();
+          }
+        } catch (err) {
+          console.warn('[FullPageTranslation] Batch error:', err);
+        }
+      })
+    );
+  } finally {
+    if (isTranslatingRef) isTranslatingRef.current = false;
   }
 }

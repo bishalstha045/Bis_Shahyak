@@ -258,7 +258,10 @@ export default function App() {
               streamingText={streamingText}
               language={language}
               onLanguageChange={setLanguage}
-              onSendMessage={({ query, mode, language }) => sendMessage({ query, mode: mode || 'auto', language })}
+              onSendMessage={({ query, mode, language: msgLang }) => {
+                const effectiveLang = (msgLang && msgLang !== 'auto') ? msgLang : (language || 'auto');
+                sendMessage({ query, mode: mode || 'auto', language: effectiveLang });
+              }}
               onOpenVerifier={() => setActiveTab('verification')}
               onOpenChecklist={handleOpenChecklist}
               onOpenEvidence={handleOpenEvidence}

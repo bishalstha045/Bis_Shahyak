@@ -32,7 +32,21 @@ export default function MessageBubble({ message, onOpenEvidence, onOpenChecklist
     window.speechSynthesis.cancel();
     const cleanText = message.content.replace(/[#*`_\[\]]/g, ' ');
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = message.language === 'hi' ? 'hi-IN' : 'en-IN';
+    const langMap = {
+      hi: 'hi-IN',
+      ta: 'ta-IN',
+      te: 'te-IN',
+      bn: 'bn-IN',
+      mr: 'mr-IN',
+      gu: 'gu-IN',
+      kn: 'kn-IN',
+      ml: 'ml-IN',
+      pa: 'pa-IN',
+      or: 'or-IN',
+      ur: 'ur-IN',
+      en: 'en-IN'
+    };
+    utterance.lang = langMap[message.language] || 'en-IN';
     utterance.rate = 0.95;
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
